@@ -1,3 +1,2 @@
-// Song-related components
-// SongItem, AlbumArt, etc.
-export {};
+export { AlbumArt } from './AlbumArt';
+export { SongItem } from './SongItem';

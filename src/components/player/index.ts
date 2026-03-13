@@ -1,3 +1,2 @@
-// Player-related components
-// MiniPlayer, ProgressBar, PlayerControls, etc.
-export {};
+export { ProgressBar } from './ProgressBar';
+export { PlayerControls } from './PlayerControls';
