@@ -31,9 +31,9 @@ export const TabNavigator: React.FC = () => {
           backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(31, 34, 42, 0.85)', // Glass effect
           borderTopWidth: 0,
           elevation: 8,
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 70,
+          paddingBottom: 10,
+          paddingTop: 6,
           paddingHorizontal: 16,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
@@ -52,10 +52,10 @@ export const TabNavigator: React.FC = () => {
           letterSpacing: 0.3,
         },
         tabBarIconStyle: {
-          marginTop: 2,
+          marginTop: -8,
         },
         tabBarItemStyle: {
-          paddingVertical: 4,
+          paddingVertical: 6,
         },
         // Glassmorphism blur effect for iOS
         ...(Platform.OS === 'ios' && {
