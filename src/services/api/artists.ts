@@ -10,10 +10,32 @@ import type {
   ArtistDetailsResponse,
   SongsResponse,
   AlbumsResponse,
+  SearchResponse,
   Artist,
   Song,
   Album,
 } from '../../types/api';
+
+/**
+ * Search artists by query
+ * @param query - Search query string
+ * @param page - Page number (default: 1)
+ * @param limit - Number of results per page (default: 20)
+ * @returns Promise with search results
+ */
+export const searchArtists = async (
+  query: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<SearchResponse<Artist>> => {
+  const response = await apiClient.get<SearchResponse<Artist>>(
+    ENDPOINTS.SEARCH_ARTISTS,
+    {
+      params: { query, page, limit },
+    }
+  );
+  return response.data;
+};
 
 /**
  * Get artist by ID

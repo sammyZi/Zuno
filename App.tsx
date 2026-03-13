@@ -22,7 +22,14 @@ export default function App() {
 
   // Initialize audio service on app start
   useEffect(() => {
-    initialize();
+    // Delay initialization to ensure activity is ready
+    const timer = setTimeout(() => {
+      initialize().catch(err => {
+        console.warn('[App] Audio initialization failed:', err);
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [initialize]);
 
   if (!fontsLoaded) {

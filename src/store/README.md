@@ -3,8 +3,56 @@
 ## Import Stores
 
 ```typescript
-import { usePlayerStore, useQueueStore, useSearchStore } from './store';
+import { usePlayerStore, useQueueStore, useSearchStore, useDataStore } from './store';
 ```
+
+## Data Store (NEW)
+
+Caches API responses to prevent unnecessary API calls when switching pages.
+
+### Get State
+```typescript
+const { getSuggestedSongs, getSongs, getArtists, getAlbums, getSearchResults } = useDataStore();
+```
+
+### Actions
+```typescript
+const { setSuggestedSongs, setSongs, setArtists, setAlbums, setSearchResults, clearCache } = useDataStore();
+
+// Check cache before making API call
+const cachedSongs = getSongs(1); // Returns null if not cached or expired
+if (cachedSongs) {
+  // Use cached data
+  setSongs(cachedSongs);
+} else {
+  // Fetch from API
+  const response = await searchSongs('latest', 1, 20);
+  setSongs(response.data.results);
+  // Cache the results
+  useDataStore.getState().setSongs(response.data.results, 1);
+}
+
+// Search cache
+const cachedSearch = getSearchResults('trending');
+if (cachedSearch) {
+  // Use cached search results
+  setSongs(cachedSearch.songs);
+  setArtists(cachedSearch.artists);
+  setAlbums(cachedSearch.albums);
+} else {
+  // Perform search and cache
+  const results = await performSearch('trending');
+  setSearchResults('trending', results.songs, results.artists, results.albums);
+}
+
+// Clear all cache
+clearCache();
+```
+
+### Cache Duration
+- Default: 5 minutes
+- Automatically expires after duration
+- Persisted to AsyncStorage
 
 ## Player Store
 

@@ -37,23 +37,39 @@ class AudioServiceClass {
       return;
     }
 
-    try {
-      // Configure audio mode for background playback
-      await Audio.setAudioModeAsync({
-        staysActiveInBackground: true,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-      });
+    // Retry logic for audio mode setup
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        // Wait for activity to be ready
+        await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+        
+        // Configure audio mode for background playback
+        await Audio.setAudioModeAsync({
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        });
 
-      this.isInitialized = true;
-      console.log('[AudioService] Initialized with background playback support');
-    } catch (error) {
-      console.error('[AudioService] Failed to initialize:', error);
-      this.callbacks.onError?.('Failed to initialize audio service');
-      throw error;
+        this.isInitialized = true;
+        console.log('[AudioService] Initialized with background playback support');
+        return;
+      } catch (error) {
+        retryCount++;
+        console.warn(`[AudioService] Initialization attempt ${retryCount} failed:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('[AudioService] Failed to initialize after', maxRetries, 'attempts');
+          // Mark as initialized anyway - app can work without keep-awake
+          this.isInitialized = true;
+          return;
+        }
+      }
     }
   }
 

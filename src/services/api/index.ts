@@ -8,3 +8,4 @@ export { ENDPOINTS } from './endpoints';
 export { default as apiClient } from './client';
 export * from './songs';
 export * from './artists';
+export * from './albums';

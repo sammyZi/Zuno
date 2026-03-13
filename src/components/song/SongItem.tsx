@@ -1,6 +1,6 @@
 /**
  * SongItem Component
- * List item for displaying a song with album art, title, artist, and controls
+ * Clean flat list item with play button, small text
  */
 
 import React from 'react';
@@ -12,7 +12,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, spacing, borderRadius } from '../../theme';
 import { AlbumArt } from './AlbumArt';
 
 interface SongItemProps {
@@ -38,46 +38,47 @@ export const SongItem: React.FC<SongItemProps> = ({
 }) => {
   return (
     <TouchableOpacity
-      style={[styles.container, isPlaying && styles.containerActive, style]}
+      style={[styles.container, style]}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
     >
-      <View style={styles.albumArtWrapper}>
-        <AlbumArt uri={albumArtUri} size="small" />
-        {isPlaying && (
-          <View style={styles.playingOverlay}>
-            <Ionicons name="volume-high" size={14} color={colors.primary} />
-          </View>
-        )}
-      </View>
+      {/* Square album art */}
+      <AlbumArt uri={albumArtUri} size="small" />
 
-      <View style={styles.infoContainer}>
+      {/* Info */}
+      <View style={styles.info}>
         <Text
           style={[styles.title, isPlaying && styles.titleActive]}
           numberOfLines={1}
         >
           {title}
         </Text>
-        <Text style={styles.artist} numberOfLines={1}>
-          {artist}
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {artist}{duration ? ` · ${duration}` : ''}
         </Text>
       </View>
 
-      {duration && (
-        <Text style={styles.duration}>{duration}</Text>
-      )}
+      {/* Orange play button */}
+      <TouchableOpacity
+        onPress={onPress}
+        style={[styles.playButton, isPlaying && styles.playButtonActive]}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name={isPlaying ? 'pause' : 'play'}
+          size={14}
+          color={isPlaying ? colors.backgroundPrimary : colors.backgroundPrimary}
+        />
+      </TouchableOpacity>
 
+      {/* 3-dot menu */}
       {onMorePress && (
         <TouchableOpacity
           onPress={onMorePress}
           style={styles.moreButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons
-            name="ellipsis-vertical"
-            size={18}
-            color={colors.textMuted}
-          />
+          <Ionicons name="ellipsis-vertical" size={16} color={colors.textMuted} />
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -88,59 +89,43 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.medium,
-    padding: spacing.md,
-    minHeight: 72,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingVertical: spacing.md,
   },
-  containerActive: {
-    borderColor: colors.primary + '40',
-    backgroundColor: colors.backgroundTertiary,
-  },
-  albumArtWrapper: {
-    position: 'relative',
-  },
-  playingOverlay: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.backgroundSecondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary + '60',
-  },
-  infoContainer: {
+  info: {
     flex: 1,
     marginLeft: spacing.md,
     marginRight: spacing.sm,
   },
   title: {
-    ...typography.bodyLarge,
+    fontSize: 13,
+    fontFamily: 'Poppins_500Medium',
     color: colors.textPrimary,
     marginBottom: 2,
   },
   titleActive: {
     color: colors.primary,
   },
-  artist: {
-    ...typography.body,
+  subtitle: {
+    fontSize: 11,
+    fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
   },
-  duration: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginRight: spacing.sm,
+  playButton: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.xs,
+  },
+  playButtonActive: {
+    backgroundColor: colors.primaryDark,
   },
   moreButton: {
     padding: spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: 32,
+    minHeight: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },

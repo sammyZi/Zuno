@@ -1,11 +1,11 @@
 /**
  * Tab Navigator
- * Modern bottom tab navigation with glassmorphism effect
- * Features: Blur background, rounded corners, smaller icons, proper spacing
+ * Bottom tab navigation with glassmorphism blur effect
+ * iOS: BlurView, Android: semi-transparent background
  */
 
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,31 +20,67 @@ import { colors } from '../theme/colors';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
+/**
+ * Glassmorphism tab bar background
+ * iOS: native BlurView
+ * Android: tinted semi-transparent overlay (BlurView performance varies)
+ */
+const TabBarBackground = () => {
+  if (Platform.OS === 'ios') {
+    return (
+      <BlurView
+        intensity={80}
+        tint="dark"
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            overflow: 'hidden',
+          },
+        ]}
+      />
+    );
+  }
+
+  // Android: glassmorphism via semi-transparent bg
+  return (
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          backgroundColor: 'rgba(24, 26, 32, 0.92)',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+        },
+      ]}
+    />
+  );
+};
+
 export const TabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        // Remove headers from all screens
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(31, 34, 42, 0.85)', // Glass effect
+          backgroundColor: 'transparent',
           borderTopWidth: 0,
-          elevation: 8,
+          elevation: 0,
           height: 70,
           paddingBottom: 10,
           paddingTop: 6,
           paddingHorizontal: 16,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
-          // Subtle shadow for elevation
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.15,
+          shadowOpacity: 0.2,
           shadowRadius: 12,
         },
-        tabBarActiveTintColor: colors.primary, // #FF8C28
-        tabBarInactiveTintColor: colors.textMuted, // #B3B3B3
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontFamily: 'Poppins_500Medium',
           fontSize: 10,
@@ -57,23 +93,7 @@ export const TabNavigator: React.FC = () => {
         tabBarItemStyle: {
           paddingVertical: 6,
         },
-        // Glassmorphism blur effect for iOS
-        ...(Platform.OS === 'ios' && {
-          tabBarBackground: () => (
-            <BlurView
-              intensity={95}
-              tint="dark"
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
-                  overflow: 'hidden',
-                },
-              ]}
-            />
-          ),
-        }),
+        tabBarBackground: () => <TabBarBackground />,
       }}
     >
       <Tab.Screen
@@ -82,10 +102,10 @@ export const TabNavigator: React.FC = () => {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "home" : "home-outline"} 
-              size={20} 
-              color={color} 
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              size={20}
+              color={color}
             />
           ),
         }}
@@ -96,10 +116,10 @@ export const TabNavigator: React.FC = () => {
         options={{
           title: 'Queue',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "list" : "list-outline"} 
-              size={20} 
-              color={color} 
+            <Ionicons
+              name={focused ? 'list' : 'list-outline'}
+              size={20}
+              color={color}
             />
           ),
         }}
@@ -110,10 +130,10 @@ export const TabNavigator: React.FC = () => {
         options={{
           title: 'Favorites',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "heart" : "heart-outline"} 
-              size={20} 
-              color={color} 
+            <Ionicons
+              name={focused ? 'heart' : 'heart-outline'}
+              size={20}
+              color={color}
             />
           ),
         }}
@@ -124,10 +144,10 @@ export const TabNavigator: React.FC = () => {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "settings" : "settings-outline"} 
-              size={20} 
-              color={color} 
+            <Ionicons
+              name={focused ? 'settings' : 'settings-outline'}
+              size={20}
+              color={color}
             />
           ),
         }}
