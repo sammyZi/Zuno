@@ -1,3 +1,6 @@
-// Audio playback service
-// AudioService using expo-av
-export {};
+/**
+ * Audio Service Exports
+ */
+
+export { AudioService } from './AudioService';
+export type { PlaybackStatus, AudioServiceCallbacks } from './AudioService';

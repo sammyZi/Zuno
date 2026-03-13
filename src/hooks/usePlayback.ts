@@ -9,8 +9,20 @@ import { useQueueStore } from '../store/queueStore';
 import { Song } from '../types';
 
 export const usePlayback = () => {
-  const { currentSong, isPlaying, position, duration, play, pause, togglePlayPause, setCurrentSong } =
-    usePlayerStore();
+  const { 
+    currentSong, 
+    isPlaying, 
+    isLoading,
+    position, 
+    duration, 
+    error,
+    play, 
+    pause, 
+    togglePlayPause, 
+    seekTo,
+    setCurrentSong,
+    initialize 
+  } = usePlayerStore();
 
   const { queue, currentIndex, nextSong, previousSong, addToQueue, setQueue } = useQueueStore();
 
@@ -85,8 +97,10 @@ export const usePlayback = () => {
     // State
     currentSong,
     isPlaying,
+    isLoading,
     position,
     duration,
+    error,
     queue,
     currentIndex,
 
@@ -94,10 +108,12 @@ export const usePlayback = () => {
     play,
     pause,
     togglePlayPause,
+    seekTo,
     playSong,
     playNext,
     playPrevious,
     playQueue,
     addAndPlay,
+    initialize,
   };
 };

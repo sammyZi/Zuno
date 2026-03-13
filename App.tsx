@@ -8,6 +8,7 @@ import {
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from '@expo-google-fonts/poppins';
+import { usePlayerStore } from './src/store/playerStore';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -16,6 +17,13 @@ export default function App() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
+
+  const initialize = usePlayerStore((state) => state.initialize);
+
+  // Initialize audio service on app start
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   if (!fontsLoaded) {
     return null; // Or a loading screen
