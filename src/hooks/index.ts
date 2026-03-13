@@ -1,3 +1,6 @@
-// Custom React hooks
-// usePlayer, useQueue, etc.
-export {};
+/**
+ * Custom React Hooks
+ * Export all custom hooks
+ */
+
+export { usePlayback } from './usePlayback';
