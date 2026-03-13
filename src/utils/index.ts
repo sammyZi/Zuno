@@ -1,3 +1,6 @@
-// Utility functions
-// audio helpers, storage helpers, etc.
-export {};
+/**
+ * Utility Functions
+ * Export all utility helper functions
+ */
+
+export * from './audio';

@@ -1,35 +1,41 @@
 # Font Setup Instructions
 
-## Iosevka Charon Mono Font
+## Poppins Font (Google Fonts)
 
-This project uses **Iosevka Charon Mono** as specified in the design requirements.
+This project uses **Poppins** - a friendly, rounded Google Font that's excellent for UI design.
 
-### Download Instructions
+### Installation
 
-1. Visit the Iosevka releases page: https://github.com/be5invis/Iosevka/releases
-2. Download the latest release (look for `PkgTTF-IosevkaCharonMono-*.zip`)
-3. Extract the following font files to this directory (`assets/fonts/`):
-   - `IosevkaCharonMono-Regular.ttf`
-   - `IosevkaCharonMono-Medium.ttf`
-   - `IosevkaCharonMono-SemiBold.ttf`
-   - `IosevkaCharonMono-Bold.ttf`
-
-### Alternative: Use a UI-Friendly Font
-
-Since Iosevka Charon Mono is a monospace font designed for code, you may prefer a more UI-friendly Google Font:
-
-**Recommended alternatives:**
-- **Inter** - Modern, clean, excellent for UI
-- **Poppins** - Friendly, rounded
-- **Roboto** - Material Design standard
-
-To use Inter instead:
+The font is already installed via:
 ```bash
-npx expo install @expo-google-fonts/inter
+npx expo install @expo-google-fonts/poppins
 ```
 
-Then update the font loading in `App.tsx` accordingly.
+### Font Weights Used
 
-### Current Status
+- **Poppins_400Regular** - Body text, descriptions
+- **Poppins_500Medium** - Emphasized text, artist names
+- **Poppins_600SemiBold** - Subheadings, song titles
+- **Poppins_700Bold** - Headings, screen titles
 
-⚠️ **Action Required**: Download the font files and place them in this directory before running the app.
+### Usage in Components
+
+```typescript
+import { Poppins_400Regular, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
+
+const styles = StyleSheet.create({
+  title: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+  },
+  body: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 14,
+  },
+});
+```
+
+### Status
+
+✅ **Ready to use** - Font is installed and configured in App.tsx
+
