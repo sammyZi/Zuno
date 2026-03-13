@@ -13,19 +13,20 @@ import type {
 } from '../../types/api';
 
 /**
- * Get songs list
- * @param page - Page number (default: 1)
- * @param limit - Number of songs per page (default: 20)
+ * Get songs by IDs
+ * Note: The /api/songs endpoint requires song IDs or a link parameter
+ * For browsing songs, use searchSongs with a popular query instead
+ * @param ids - Comma-separated song IDs
  * @returns Promise with songs response
  */
-export const getSongs = async (
-  page: number = 1,
-  limit: number = 20
-): Promise<SongsResponse> => {
-  const response = await apiClient.get<SongsResponse>(ENDPOINTS.GET_SONGS, {
-    params: { page, limit },
-  });
-  return response.data;
+export const getSongs = async (ids: string): Promise<Song[]> => {
+  const response = await apiClient.get<{ success: boolean; data: Song[] }>(
+    ENDPOINTS.GET_SONGS,
+    {
+      params: { ids },
+    }
+  );
+  return response.data.data;
 };
 
 /**
@@ -55,10 +56,11 @@ export const searchSongs = async (
  * @returns Promise with song details
  */
 export const getSongById = async (id: string): Promise<Song> => {
-  const response = await apiClient.get<SongDetailsResponse>(
+  const response = await apiClient.get<{ success: boolean; data: Song[] }>(
     ENDPOINTS.GET_SONG_BY_ID(id)
   );
-  return response.data.data;
+  // API returns array with single song
+  return response.data.data[0];
 };
 
 /**
@@ -71,11 +73,11 @@ export const getSongSuggestions = async (
   id: string,
   limit: number = 10
 ): Promise<Song[]> => {
-  const response = await apiClient.get<SongsResponse>(
+  const response = await apiClient.get<{ success: boolean; data: Song[] }>(
     ENDPOINTS.GET_SONG_SUGGESTIONS(id),
     {
       params: { limit },
     }
   );
-  return response.data.data.results;
+  return response.data.data;
 };
