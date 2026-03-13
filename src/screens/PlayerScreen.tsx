@@ -1,24 +1,86 @@
-import React, { useEffect, useState } from 'react';
+/**
+ * PlayerScreen – Premium full-screen music player
+ *
+ * Features:
+ *  - Animated album art with breathing pulse when playing
+ *  - Smooth slide-up entrance via Reanimated
+ *  - Double-tap on artwork left/right half to seek ±10s
+ *  - Seek buttons (rewind/forward 10s)
+ *  - Lit-up bottom action buttons with labels
+ *  - Beautiful gradient background
+ *  - Micro-interaction feedback on all buttons
+ */
+
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
   ActivityIndicator,
+  Dimensions,
+  StatusBar,
+  Image,
+  GestureResponderEvent,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withRepeat,
+  withSequence,
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  SharedValue,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { StackScreenProps } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
-import { AlbumArt } from '../components/song/AlbumArt';
+import { colors, spacing, typography, borderRadius } from '../theme';
 import { ProgressBar } from '../components/player/ProgressBar';
 import { usePlayerStore } from '../store/playerStore';
 import { useQueueStore, RepeatMode } from '../store/queueStore';
 import { getImageUrl, getArtistNames } from '../utils/audio';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ARTWORK_SIZE = SCREEN_WIDTH * 0.75;
+const SEEK_SECONDS = 10;
+
 type Props = StackScreenProps<RootStackParamList, 'Player'>;
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
+// ────────────────────────────────────────
+// Double-tap seek overlay feedback
+// ────────────────────────────────────────
+const SeekFeedback: React.FC<{ side: 'left' | 'right'; visible: boolean }> = ({
+  side,
+  visible,
+}) => {
+  if (!visible) return null;
+  return (
+    <View
+      style={[
+        styles.seekFeedback,
+        side === 'left' ? styles.seekFeedbackLeft : styles.seekFeedbackRight,
+      ]}
+    >
+      <Ionicons
+        name={side === 'left' ? 'play-back' : 'play-forward'}
+        size={28}
+        color="rgba(255,255,255,0.9)"
+      />
+      <Text style={styles.seekFeedbackText}>
+        {side === 'left' ? '-' : '+'}
+        {SEEK_SECONDS}s
+      </Text>
+    </View>
+  );
+};
 
 export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
   const {
@@ -28,7 +90,6 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
     position,
     duration,
     play,
-    pause,
     togglePlayPause,
     seekTo,
   } = usePlayerStore();
@@ -42,96 +103,144 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
     previousSong,
   } = useQueueStore();
 
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
+  // ── Shared animation values ──
+  const artworkScale = useSharedValue(1);
+  const playBtnScale = useSharedValue(1);
 
-  // Initialize with song from route params if provided
+  // ── Double-tap state ──
+  const lastTapTimeRef = useRef<number>(0);
+  const lastTapSideRef = useRef<'left' | 'right' | null>(null);
+  const [seekFeedbackSide, setSeekFeedbackSide] = useState<'left' | 'right' | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Initialize with song from route params
   useEffect(() => {
     if (route.params?.song && (!currentSong || currentSong.id !== route.params.song.id)) {
       play(route.params.song);
     }
   }, [route.params?.song]);
 
+  // ── Artwork breathing animation when playing ──
+  useEffect(() => {
+    if (isPlaying) {
+      artworkScale.value = withRepeat(
+        withSequence(
+          withTiming(1.03, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1.0, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        true,
+      );
+    } else {
+      artworkScale.value = withSpring(1, { damping: 15 });
+    }
+  }, [isPlaying]);
+
+  const artworkAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: artworkScale.value }],
+  }));
+
+  // ── Button press feedback ──
+  const animatePress = useCallback((sv: SharedValue<number>) => {
+    sv.value = withSequence(
+      withTiming(0.88, { duration: 80 }),
+      withSpring(1, { damping: 12 }),
+    );
+  }, []);
+
+  const playBtnAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: playBtnScale.value }],
+  }));
+
+  // ── Handlers ──
   const handleNext = async () => {
     const next = nextSong();
-    if (next) {
-      await play(next);
-    }
+    if (next) await play(next);
   };
 
   const handlePrevious = async () => {
-    // If more than 3 seconds into the song, restart it
     if (position > 3) {
       await seekTo(0);
     } else {
       const prev = previousSong();
-      if (prev) {
-        await play(prev);
-      }
+      if (prev) await play(prev);
     }
   };
 
   const handleSeek = async (positionMs: number) => {
-    await seekTo(positionMs / 1000); // Convert ms to seconds
+    await seekTo(positionMs / 1000);
+  };
+
+  const handleSeekForward = async () => {
+    const newPos = Math.min(position + SEEK_SECONDS, duration);
+    await seekTo(newPos);
+  };
+
+  const handleSeekBackward = async () => {
+    const newPos = Math.max(position - SEEK_SECONDS, 0);
+    await seekTo(newPos);
+  };
+
+  // ── Double-tap on artwork ──
+  const handleArtworkPress = (evt: GestureResponderEvent) => {
+    const now = Date.now();
+    const tapX = evt.nativeEvent.locationX;
+    const side: 'left' | 'right' = tapX < ARTWORK_SIZE / 2 ? 'left' : 'right';
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapTimeRef.current < DOUBLE_TAP_DELAY && lastTapSideRef.current === side) {
+      // Double tap detected!
+      if (side === 'left') {
+        handleSeekBackward();
+      } else {
+        handleSeekForward();
+      }
+
+      // Show feedback
+      setSeekFeedbackSide(side);
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = setTimeout(() => setSeekFeedbackSide(null), 600);
+
+      lastTapTimeRef.current = 0; // Reset
+    } else {
+      lastTapTimeRef.current = now;
+      lastTapSideRef.current = side;
+    }
   };
 
   const handleRepeatToggle = () => {
     const modes: RepeatMode[] = ['off', 'all', 'one'];
-    const currentIndex = modes.indexOf(repeat);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    setRepeat(modes[nextIndex]);
-  };
-
-  const handleDownload = () => {
-    // TODO: Implement download functionality in task 15
-    setIsDownloading(true);
-    // Simulate download progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setDownloadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setIsDownloading(false);
-        setDownloadProgress(0);
-      }
-    }, 200);
-  };
-
-  const handleQueuePress = () => {
-    // Close the player modal and navigate to Playlists tab
-    navigation.goBack();
-    // Note: User can access queue from Playlists tab
-    // In a future enhancement, we could use a separate Queue screen
+    const idx = modes.indexOf(repeat);
+    setRepeat(modes[(idx + 1) % modes.length]);
   };
 
   const getRepeatIcon = (): keyof typeof Ionicons.glyphMap => {
     switch (repeat) {
-      case 'one':
-        return 'repeat-outline'; // Will show as repeat-one with custom styling
-      case 'all':
-        return 'repeat';
-      default:
-        return 'repeat-outline';
+      case 'one':  return 'repeat-outline';
+      case 'all':  return 'repeat';
+      default:     return 'repeat-outline';
     }
   };
 
+  // ── Empty state ──
   if (!currentSong) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <LinearGradient
+          colors={['#1a1c24', colors.backgroundPrimary]}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-down" size={28} color={colors.textPrimary} />
+          <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-down-outline" size={26} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
         <View style={styles.emptyContainer}>
-          <Ionicons name="musical-notes" size={64} color={colors.textMuted} />
+          <Ionicons name="musical-notes-outline" size={72} color={colors.textMuted} />
           <Text style={styles.emptyText}>No song playing</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -139,149 +248,246 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
   const artistNames = getArtistNames(currentSong);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* ── Dynamic gradient background ── */}
+      <LinearGradient
+        colors={['#2a1810', '#1a1020', colors.backgroundPrimary]}
+        locations={[0, 0.4, 0.85]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* ── Header ── */}
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(100)}
+        style={styles.header}
       >
-        {/* Header with back button */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-down" size={28} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Now Playing</Text>
-          <View style={styles.backButton} />
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-down-outline" size={26} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerLabel}>NOW PLAYING</Text>
         </View>
+        <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+          <Ionicons name="ellipsis-horizontal" size={22} color={colors.textPrimary} />
+        </TouchableOpacity>
+      </Animated.View>
 
-        {/* Album Artwork */}
-        <View style={styles.artworkContainer}>
-          <AlbumArt uri={albumArtUrl} size="player" style={styles.artwork} />
-        </View>
+      {/* ── Top section: Artwork (takes remaining space) ── */}
+      <Animated.View
+        entering={FadeIn.duration(500).delay(200)}
+        style={styles.artworkSection}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={handleArtworkPress}
+          style={styles.artworkTouchable}
+        >
+          <Animated.View style={[styles.artworkWrapper, artworkAnimStyle]}>
+            {/* Glow effect behind art */}
+            <View style={styles.artworkGlow} />
+            <View style={styles.artworkInner}>
+              {albumArtUrl ? (
+                <Image
+                  source={{ uri: albumArtUrl }}
+                  style={styles.artwork}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={[styles.artwork, styles.artworkPlaceholder]}>
+                  <Ionicons name="musical-notes-outline" size={80} color={colors.textMuted} />
+                </View>
+              )}
+            </View>
+          </Animated.View>
 
+          {/* Double-tap seek feedback overlays */}
+          <SeekFeedback side="left" visible={seekFeedbackSide === 'left'} />
+          <SeekFeedback side="right" visible={seekFeedbackSide === 'right'} />
+        </TouchableOpacity>
+
+        {/* Double-tap hint */}
+        <Text style={styles.doubleTapHint}>Double-tap sides to seek ±{SEEK_SECONDS}s</Text>
+      </Animated.View>
+
+      {/* ── Bottom section: Info + Controls (fixed at bottom) ── */}
+      <View style={styles.controlsSection}>
         {/* Song Info */}
-        <View style={styles.infoContainer}>
+        <Animated.View
+          entering={FadeInUp.duration(400).delay(300)}
+          style={styles.infoContainer}
+        >
           <Text style={styles.songTitle} numberOfLines={2}>
             {currentSong.name}
           </Text>
           <Text style={styles.artistName} numberOfLines={1}>
             {artistNames}
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Progress Bar */}
-        <View style={styles.progressContainer}>
+        <Animated.View
+          entering={FadeInUp.duration(400).delay(350)}
+          style={styles.progressContainer}
+        >
           <ProgressBar
-            currentPosition={position * 1000} // Convert seconds to ms
-            duration={duration * 1000} // Convert seconds to ms
+            currentPosition={position * 1000}
+            duration={duration * 1000}
             onSeek={handleSeek}
             showTimeLabels={true}
           />
-        </View>
+        </Animated.View>
 
-        {/* Main Playback Controls */}
-        <View style={styles.mainControls}>
+        {/* Main Controls */}
+        <Animated.View
+          entering={FadeInUp.duration(400).delay(400)}
+          style={styles.mainControls}
+        >
+          {/* Shuffle */}
           <TouchableOpacity
-            style={styles.secondaryControlButton}
-            onPress={handlePrevious}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="play-skip-back" size={28} color={colors.textPrimary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.playButton, isPlaying && styles.playButtonActive]}
-            onPress={togglePlayPause}
-            activeOpacity={0.8}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="large" color={colors.backgroundPrimary} />
-            ) : (
-              <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
-                size={36}
-                color={isPlaying ? colors.backgroundPrimary : colors.textPrimary}
-              />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryControlButton}
-            onPress={handleNext}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="play-skip-forward" size={28} color={colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Secondary Controls */}
-        <View style={styles.secondaryControls}>
-          {/* Shuffle Button */}
-          <TouchableOpacity
-            style={styles.iconButton}
+            style={styles.sideControl}
             onPress={toggleShuffle}
             activeOpacity={0.7}
           >
             <Ionicons
-              name="shuffle"
-              size={24}
-              color={shuffle ? colors.secondary : colors.textMuted}
+              name={shuffle ? 'shuffle' : 'shuffle-outline'}
+              size={22}
+              color={shuffle ? colors.primary : colors.textMuted}
             />
           </TouchableOpacity>
 
-          {/* Repeat Button */}
+          {/* Previous */}
           <TouchableOpacity
-            style={styles.iconButton}
+            style={styles.skipButton}
+            onPress={handlePrevious}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="play-skip-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+
+          {/* Rewind 10s */}
+          <TouchableOpacity
+            style={styles.seekButton}
+            onPress={handleSeekBackward}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="play-back-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.seekBtnLabel}>10</Text>
+          </TouchableOpacity>
+
+          {/* Play / Pause */}
+          <AnimatedTouchable
+            style={[styles.playButton, playBtnAnimStyle]}
+            onPress={() => {
+              animatePress(playBtnScale);
+              togglePlayPause();
+            }}
+            activeOpacity={0.85}
+            disabled={isLoading}
+          >
+            <LinearGradient
+              colors={[colors.primaryLight, colors.primary, colors.primaryDark]}
+              style={styles.playButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="large" color="#fff" />
+              ) : (
+                <Ionicons
+                  name={isPlaying ? 'pause' : 'play'}
+                  size={32}
+                  color="#fff"
+                  style={!isPlaying ? { marginLeft: 3 } : undefined}
+                />
+              )}
+            </LinearGradient>
+          </AnimatedTouchable>
+
+          {/* Forward 10s */}
+          <TouchableOpacity
+            style={styles.seekButton}
+            onPress={handleSeekForward}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="play-forward-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.seekBtnLabel}>10</Text>
+          </TouchableOpacity>
+
+          {/* Next */}
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleNext}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="play-skip-forward" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+
+          {/* Repeat */}
+          <TouchableOpacity
+            style={styles.sideControl}
             onPress={handleRepeatToggle}
             activeOpacity={0.7}
           >
-            <View style={styles.repeatButtonContent}>
+            <View>
               <Ionicons
                 name={getRepeatIcon()}
-                size={24}
-                color={repeat !== 'off' ? colors.secondary : colors.textMuted}
+                size={22}
+                color={repeat !== 'off' ? colors.primary : colors.textMuted}
               />
               {repeat === 'one' && (
-                <Text style={styles.repeatOneText}>1</Text>
+                <View style={styles.repeatOneBadge}>
+                  <Text style={styles.repeatOneText}>1</Text>
+                </View>
               )}
             </View>
           </TouchableOpacity>
+        </Animated.View>
 
-          {/* Download Button */}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleDownload}
-            activeOpacity={0.7}
-            disabled={isDownloading}
-          >
-            {isDownloading ? (
-              <View style={styles.downloadProgress}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.downloadProgressText}>{downloadProgress}%</Text>
-              </View>
-            ) : (
-              <Ionicons
-                name="download-outline"
-                size={24}
-                color={colors.textMuted}
-              />
-            )}
+        {/* Bottom Actions – Lit-up with labels */}
+        <Animated.View
+          entering={FadeInUp.duration(400).delay(450)}
+          style={styles.bottomActions}
+        >
+          <TouchableOpacity style={styles.bottomBtn} activeOpacity={0.7}>
+            <View style={styles.bottomBtnInner}>
+              <Ionicons name="heart-outline" size={22} color={colors.primary} />
+            </View>
+            <Text style={styles.bottomBtnLabel}>Like</Text>
           </TouchableOpacity>
 
-          {/* Queue Button */}
+          <TouchableOpacity style={styles.bottomBtn} activeOpacity={0.7}>
+            <View style={styles.bottomBtnInner}>
+              <Ionicons name="share-social-outline" size={22} color={colors.secondary} />
+            </View>
+            <Text style={styles.bottomBtnLabel}>Share</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleQueuePress}
+            style={styles.bottomBtn}
+            onPress={() => { navigation.goBack(); }}
             activeOpacity={0.7}
           >
-            <Ionicons name="list" size={24} color={colors.textMuted} />
+            <View style={styles.bottomBtnInner}>
+              <Ionicons name="list-outline" size={22} color="#A78BFA" />
+            </View>
+            <Text style={styles.bottomBtnLabel}>Queue</Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          <TouchableOpacity style={styles.bottomBtn} activeOpacity={0.7}>
+            <View style={styles.bottomBtnInner}>
+              <Ionicons name="download-outline" size={22} color="#60A5FA" />
+            </View>
+            <Text style={styles.bottomBtnLabel}>Save</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </View>
   );
 };
 
@@ -290,111 +496,250 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
   },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: (StatusBar.currentHeight ?? 24) + 8,
+    paddingBottom: 4,
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  headerBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: borderRadius.round,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    fontFamily: 'Poppins_500Medium',
-  },
-  artworkContainer: {
+  headerCenter: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: spacing.lg,
-    marginBottom: spacing.xl,
+  },
+  headerLabel: {
+    fontSize: 11,
+    fontFamily: 'Poppins_600SemiBold',
+    letterSpacing: 2,
+    color: colors.textMuted,
+  },
+
+  // ── Artwork section (fills remaining space) ──
+  artworkSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  artworkTouchable: {
+    position: 'relative',
+    width: ARTWORK_SIZE,
+    height: ARTWORK_SIZE,
+  },
+  artworkWrapper: {
+    width: ARTWORK_SIZE,
+    height: ARTWORK_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  artworkGlow: {
+    position: 'absolute',
+    width: ARTWORK_SIZE * 0.85,
+    height: ARTWORK_SIZE * 0.85,
+    borderRadius: ARTWORK_SIZE / 2,
+    backgroundColor: colors.primary,
+    opacity: 0.12,
+    top: ARTWORK_SIZE * 0.075,
+    left: ARTWORK_SIZE * 0.075,
+  },
+  artworkInner: {
+    width: ARTWORK_SIZE,
+    height: ARTWORK_SIZE,
+    borderRadius: borderRadius.xlarge,
+    overflow: 'hidden',
   },
   artwork: {
-    ...shadows.large,
+    width: '100%',
+    height: '100%',
+    borderRadius: borderRadius.xlarge,
   },
+  artworkPlaceholder: {
+    backgroundColor: colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ── Double-tap seek feedback ──
+  seekFeedback: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '50%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: borderRadius.xlarge,
+  },
+  seekFeedbackLeft: {
+    left: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  seekFeedbackRight: {
+    right: 0,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+  },
+  seekFeedbackText: {
+    fontSize: 13,
+    fontFamily: 'Poppins_600SemiBold',
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 4,
+  },
+  doubleTapHint: {
+    fontSize: 10,
+    fontFamily: 'Poppins_400Regular',
+    color: 'rgba(255,255,255,0.2)',
+    marginTop: 8,
+  },
+
+  // ── Controls section (pinned to bottom) ──
+  controlsSection: {
+    paddingBottom: spacing.lg,
+  },
+
+  // ── Song Info ──
   infoContainer: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.md,
-  },
-  songTitle: {
-    ...typography.h2,
-    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
     marginBottom: spacing.sm,
   },
+  songTitle: {
+    fontSize: 22,
+    fontFamily: 'Poppins_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 4,
+    lineHeight: 28,
+  },
   artistName: {
-    ...typography.body,
-    color: colors.textSecondary,
+    fontSize: 14,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
     textAlign: 'center',
   },
+
+  // ── Progress ──
   progressContainer: {
-    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xs,
   },
+
+  // ── Main Controls ──
   mainControls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  secondaryControlButton: {
-    width: 48,
-    height: 48,
+  sideControl: {
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: spacing.lg,
+  },
+  skipButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.round,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 2,
+  },
+  seekButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 2,
+    position: 'relative',
+  },
+  seekBtnLabel: {
+    fontSize: 8,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textSecondary,
+    position: 'absolute',
+    bottom: 2,
   },
   playButton: {
     width: 64,
     height: 64,
-    borderRadius: borderRadius.round,
-    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 32,
+    marginHorizontal: spacing.sm,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 10,
+  },
+  playButtonGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.medium,
   },
-  playButtonActive: {
+
+  // ── Repeat badge ──
+  repeatOneBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
     backgroundColor: colors.primary,
-  },
-  secondaryControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: spacing.xl,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  repeatButtonContent: {
-    position: 'relative',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     justifyContent: 'center',
     alignItems: 'center',
   },
   repeatOneText: {
-    position: 'absolute',
-    fontSize: 10,
-    fontFamily: 'Poppins_600SemiBold',
-    color: colors.secondary,
-    bottom: -2,
-  },
-  downloadProgress: {
-    alignItems: 'center',
-  },
-  downloadProgressText: {
     fontSize: 8,
-    color: colors.primary,
-    marginTop: 2,
     fontFamily: 'Poppins_600SemiBold',
+    color: '#fff',
   },
+
+  // ── Bottom actions (lit-up with labels) ──
+  bottomActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  bottomBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomBtnInner: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.round,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  bottomBtnLabel: {
+    fontSize: 10,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+
+  // ── Empty ──
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',

@@ -1,12 +1,12 @@
 /**
  * ProgressBar Component
- * Uses @react-native-community/slider for proper native slider behavior
+ * Premium seek bar with native slider and clean time labels
  */
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { colors, spacing, typography } from '../../theme';
+import { colors, spacing } from '../../theme';
 
 interface ProgressBarProps {
   currentPosition: number; // in milliseconds
@@ -17,7 +17,7 @@ interface ProgressBarProps {
 }
 
 const formatTime = (ms: number): string => {
-  const totalSeconds = Math.floor(ms / 1000);
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -34,7 +34,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   const [seekValue, setSeekValue] = useState(0);
 
   const displayPosition = isSeeking ? seekValue : currentPosition;
-  const progress = duration > 0 ? displayPosition / duration : 0;
 
   return (
     <View style={[styles.container, style]}>
@@ -44,7 +43,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         maximumValue={duration > 0 ? duration : 1}
         value={displayPosition}
         minimumTrackTintColor={colors.primary}
-        maximumTrackTintColor={colors.backgroundTertiary}
+        maximumTrackTintColor="rgba(255,255,255,0.12)"
         thumbTintColor={colors.primary}
         onSlidingStart={(value) => {
           setIsSeeking(true);
@@ -60,8 +59,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       />
       {showTimeLabels && (
         <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(displayPosition)}</Text>
-          <Text style={styles.timeText}>{formatTime(duration)}</Text>
+          <Text style={styles.timeCurrent}>{formatTime(displayPosition)}</Text>
+          <Text style={styles.timeTotal}>{formatTime(duration)}</Text>
         </View>
       )}
     </View>
@@ -74,16 +73,24 @@ const styles = StyleSheet.create({
   },
   slider: {
     width: '100%',
-    height: 40,
+    height: 36,
   },
   timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: -spacing.xs,
-    paddingHorizontal: spacing.xs,
+    marginTop: -2,
+    paddingHorizontal: 4,
   },
-  timeText: {
-    ...typography.caption,
+  timeCurrent: {
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium',
+    color: colors.textPrimary,
+    opacity: 0.7,
+  },
+  timeTotal: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
+    opacity: 0.5,
   },
 });

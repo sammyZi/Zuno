@@ -72,14 +72,25 @@ export const AppNavigator: React.FC = () => {
             }}
           />
 
-          {/* Modal Screens */}
+          {/* Player Screen – Full-screen slide-up with swipe-down dismiss */}
           <Stack.Screen
             name="Player"
             component={PlayerScreen}
             options={{
-              presentation: 'modal',
               headerShown: false,
-              cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+              cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
+              gestureEnabled: true,
+              gestureDirection: 'vertical',
+              transitionSpec: {
+                open: {
+                  animation: 'spring',
+                  config: { damping: 20, stiffness: 200, mass: 0.8 },
+                },
+                close: {
+                  animation: 'spring',
+                  config: { damping: 20, stiffness: 200, mass: 0.8 },
+                },
+              },
               cardStyle: {
                 backgroundColor: colors.backgroundPrimary,
               },
