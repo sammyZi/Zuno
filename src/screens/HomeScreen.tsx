@@ -130,9 +130,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryWrapper: {
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.backgroundSecondary,
+    //paddingVertical: spacing.md,
   },
   categorySlider: {
     paddingHorizontal: spacing.md,
@@ -159,7 +157,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   categoryTextActive: {
-    color: colors.textPrimary,
+    color: colors.primary,
     fontFamily: 'Poppins_600SemiBold',
   },
   content: {

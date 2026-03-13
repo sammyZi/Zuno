@@ -33,6 +33,7 @@ export type RootStackParamList = {
   Album: {
     albumId: string;
   };
+  ComponentShowcase: undefined;
 };
 
 declare global {

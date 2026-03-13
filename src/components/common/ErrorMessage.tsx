@@ -1,3 +1,8 @@
+/**
+ * ErrorMessage Component
+ * Displays an error state with an optional retry button
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,13 +23,16 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   return (
     <View style={[styles.container, style]}>
       <View style={styles.errorBox}>
-        <Ionicons name="alert-circle" size={24} color={colors.textPrimary} />
+        <View style={styles.iconWrapper}>
+          <Ionicons name="alert-circle" size={28} color={colors.error} />
+        </View>
         <Text style={styles.errorText}>{message}</Text>
       </View>
       {onRetry && (
         <Button
           variant="secondary"
-          title="Retry"
+          icon="refresh"
+          title="Try Again"
           onPress={onRetry}
           style={styles.retryButton}
         />
@@ -35,27 +43,37 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
   },
   errorBox: {
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.error,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.medium,
+    backgroundColor: colors.backgroundSecondary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.large,
+    borderWidth: 1,
+    borderColor: colors.error + '40',
     marginBottom: spacing.md,
+    width: '100%',
+    gap: spacing.sm,
+  },
+  iconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.error + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
   errorText: {
     ...typography.body,
-    color: colors.textPrimary,
-    marginLeft: spacing.sm,
-    flex: 1,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   retryButton: {
-    marginTop: spacing.md,
+    minWidth: 160,
   },
 });

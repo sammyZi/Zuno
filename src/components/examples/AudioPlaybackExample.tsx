@@ -5,16 +5,28 @@
  */
 
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+} from 'react-native';
 import { usePlayerStore } from '../../store/playerStore';
 import { Song } from '../../types';
 import { formatDuration } from '../../utils/audio';
+import { Button } from '../common/Button';
+import { LoadingSpinner } from '../common/LoadingSpinner';
+import { ErrorMessage } from '../common/ErrorMessage';
+import { ProgressBar } from '../player/ProgressBar';
+import { PlayerControls } from '../player/PlayerControls';
+import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
 
 // Example song for testing
 const EXAMPLE_SONG: Song = {
   id: '1',
-  name: 'Test Song',
-  duration: 180,
+  name: 'SoundHelix Song 1',
+  duration: 230,
   language: 'english',
   album: {
     id: '1',
@@ -24,7 +36,7 @@ const EXAMPLE_SONG: Song = {
     primary: [
       {
         id: '1',
-        name: 'Test Artist',
+        name: 'SoundHelix',
       },
     ],
   },
@@ -37,7 +49,7 @@ const EXAMPLE_SONG: Song = {
   downloadUrl: [
     {
       quality: '320kbps',
-      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Free test audio
+      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     },
   ],
 };
@@ -51,13 +63,11 @@ export const AudioPlaybackExample: React.FC = () => {
     duration,
     error,
     play,
-    pause,
     togglePlayPause,
     seekTo,
     initialize,
   } = usePlayerStore();
 
-  // Initialize on mount
   useEffect(() => {
     initialize();
   }, [initialize]);
@@ -66,197 +76,286 @@ export const AudioPlaybackExample: React.FC = () => {
     await play(EXAMPLE_SONG);
   };
 
-  const handleSeekForward = async () => {
-    await seekTo(position + 10);
+  const handleSeek = async (ms: number) => {
+    await seekTo(ms / 1000); // Convert ms -> seconds
   };
 
-  const handleSeekBackward = async () => {
-    await seekTo(Math.max(0, position - 10));
-  };
+  const artistName =
+    currentSong?.artists.primary.map((a) => a.name).join(', ') ?? '';
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Audio Playback Test</Text>
-
-      {/* Current Song Info */}
-      <View style={styles.songInfo}>
-        <Text style={styles.songName}>
-          {currentSong ? currentSong.name : 'No song loaded'}
-        </Text>
-        {currentSong && (
-          <Text style={styles.artistName}>
-            {currentSong.artists.primary[0]?.name || 'Unknown Artist'}
-          </Text>
-        )}
-      </View>
-
-      {/* Playback Progress */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.timeText}>{formatDuration(position)}</Text>
-        <View style={styles.progressBar}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Audio Playback Test</Text>
           <View
             style={[
-              styles.progressFill,
-              { width: duration > 0 ? `${(position / duration) * 100}%` : '0%' },
+              styles.statusPill,
+              isPlaying
+                ? styles.statusPlaying
+                : isLoading
+                ? styles.statusLoading
+                : styles.statusPaused,
             ]}
-          />
+          >
+            <Text style={styles.statusText}>
+              {isPlaying ? 'Playing' : isLoading ? 'Loading' : 'Paused'}
+            </Text>
+          </View>
         </View>
-        <Text style={styles.timeText}>{formatDuration(duration)}</Text>
-      </View>
 
-      {/* Loading Indicator */}
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF8C28" />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-
-      {/* Playback Controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleSeekBackward}
-          disabled={!currentSong}
-        >
-          <Text style={styles.buttonText}>-10s</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.playButton]}
-          onPress={currentSong ? togglePlayPause : handlePlay}
-          disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>
-            {isPlaying ? 'Pause' : currentSong ? 'Play' : 'Load & Play'}
+        {/* Song Info Card */}
+        <View style={styles.songCard}>
+          <View style={styles.songArtPlaceholder}>
+            <Text style={styles.musicEmoji}>🎵</Text>
+          </View>
+          <Text style={styles.songName} numberOfLines={2}>
+            {currentSong ? currentSong.name : 'No song loaded'}
           </Text>
-        </TouchableOpacity>
+          {currentSong && (
+            <Text style={styles.artistName}>{artistName}</Text>
+          )}
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleSeekForward}
-          disabled={!currentSong}
-        >
-          <Text style={styles.buttonText}>+10s</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Loading */}
+          {isLoading && (
+            <LoadingSpinner
+              size="large"
+              label="Loading audio..."
+              style={styles.spinner}
+            />
+          )}
 
-      {/* Status Info */}
-      <View style={styles.statusContainer}>
-        <Text style={styles.statusText}>
-          Status: {isPlaying ? 'Playing' : isLoading ? 'Loading' : 'Paused'}
-        </Text>
-        <Text style={styles.statusText}>
-          Position: {position.toFixed(1)}s / {duration.toFixed(1)}s
-        </Text>
-      </View>
-    </View>
+          {/* Error */}
+          {error && !isLoading && (
+            <ErrorMessage
+              message={error}
+              onRetry={handlePlay}
+              style={styles.errorSection}
+            />
+          )}
+
+          {/* Progress Slider */}
+          {!isLoading && !error && (
+            <ProgressBar
+              currentPosition={position * 1000} // seconds -> ms
+              duration={duration > 0 ? duration * 1000 : EXAMPLE_SONG.duration * 1000}
+              onSeek={handleSeek}
+              showTimeLabels
+              style={styles.progress}
+            />
+          )}
+        </View>
+
+        {/* Player Controls */}
+        <View style={styles.controlsCard}>
+          <PlayerControls
+            isPlaying={isPlaying}
+            onPlayPause={currentSong ? togglePlayPause : handlePlay}
+            onNext={() => {}}
+            onPrevious={() => {}}
+            disableNext
+            disablePrevious
+          />
+
+          {/* Seek Buttons */}
+          <View style={styles.seekRow}>
+            <Button
+              variant="secondary"
+              icon="play-back"
+              title="-10s"
+              iconSize={16}
+              onPress={() => handleSeek(Math.max(0, position * 1000 - 10000))}
+              disabled={!currentSong}
+              style={styles.seekButton}
+            />
+            {!currentSong && (
+              <Button
+                variant="primary"
+                icon="play"
+                title="Load & Play"
+                onPress={handlePlay}
+                loading={isLoading}
+                style={styles.loadButton}
+              />
+            )}
+            <Button
+              variant="secondary"
+              icon="play-forward"
+              title="+10s"
+              iconSize={16}
+              onPress={() =>
+                handleSeek(Math.min(duration * 1000, position * 1000 + 10000))
+              }
+              disabled={!currentSong}
+              style={styles.seekButton}
+            />
+          </View>
+        </View>
+
+        {/* Status Info */}
+        <View style={styles.statusCard}>
+          <Text style={styles.statusCardTitle}>Playback Info</Text>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Position</Text>
+            <Text style={styles.statusValue}>
+              {formatDuration(position)} / {formatDuration(duration)}
+            </Text>
+          </View>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>State</Text>
+            <Text style={styles.statusValue}>
+              {isPlaying ? '▶ Playing' : isLoading ? '⏳ Loading' : '⏸ Paused'}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#181A20',
-    justifyContent: 'center',
+    backgroundColor: colors.backgroundPrimary,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 30,
+  scrollContent: {
+    padding: spacing.md,
+    paddingBottom: spacing.xxxl,
   },
-  songInfo: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  songName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 5,
-  },
-  artistName: {
-    fontSize: 14,
-    color: '#FAFAFA',
-  },
-  progressContainer: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 30,
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+    marginTop: spacing.sm,
   },
-  progressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: '#282828',
-    borderRadius: 2,
-    marginHorizontal: 10,
-    overflow: 'hidden',
+  headerTitle: {
+    ...typography.h3,
+    color: colors.textPrimary,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#FF8C28',
+  statusPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.round,
   },
-  timeText: {
-    fontSize: 12,
-    color: '#B3B3B3',
-    width: 45,
+  statusPlaying: {
+    backgroundColor: colors.secondary + '25',
+    borderWidth: 1,
+    borderColor: colors.secondary + '60',
   },
-  loadingContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
+  statusLoading: {
+    backgroundColor: colors.primary + '25',
+    borderWidth: 1,
+    borderColor: colors.primary + '60',
   },
-  loadingText: {
-    color: '#FFFFFF',
-    marginTop: 10,
-  },
-  errorContainer: {
-    backgroundColor: '#E22134',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  button: {
-    backgroundColor: '#282828',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginHorizontal: 5,
-  },
-  playButton: {
-    backgroundColor: '#FF8C28',
-    paddingHorizontal: 30,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  statusContainer: {
-    alignItems: 'center',
+  statusPaused: {
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
   },
   statusText: {
-    color: '#B3B3B3',
-    fontSize: 12,
-    marginBottom: 5,
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  songCard: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.large,
+    padding: spacing.lg,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    ...shadows.medium,
+  },
+  songArtPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: borderRadius.xlarge,
+    backgroundColor: colors.backgroundTertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  musicEmoji: {
+    fontSize: 48,
+  },
+  songName: {
+    ...typography.h3,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  artistName: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  spinner: {
+    marginVertical: spacing.md,
+  },
+  errorSection: {
+    width: '100%',
+  },
+  progress: {
+    width: '100%',
+    marginTop: spacing.sm,
+  },
+  controlsCard: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.large,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+  },
+  seekRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  seekButton: {
+    flex: 1,
+  },
+  loadButton: {
+    flex: 1,
+  },
+  statusCard: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.large,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    gap: spacing.sm,
+  },
+  statusCardTitle: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundTertiary,
+    paddingBottom: spacing.sm,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusLabel: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  statusValue: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
 });

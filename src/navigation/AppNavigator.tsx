@@ -16,6 +16,7 @@ import {
   ArtistScreen,
   AlbumScreen,
 } from '../screens';
+import { ComponentShowcaseScreen } from '../screens/ComponentShowcaseScreen';
 import { colors } from '../theme/colors';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -102,6 +103,14 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen
           name="Album"
           component={AlbumScreen}
+          options={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+          }}
+        />
+        <Stack.Screen
+          name="ComponentShowcase"
+          component={ComponentShowcaseScreen}
           options={{
             headerShown: false,
             cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,

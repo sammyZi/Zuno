@@ -1,3 +1,8 @@
+/**
+ * SongItem Component
+ * List item for displaying a song with album art, title, artist, and controls
+ */
+
 import React from 'react';
 import {
   TouchableOpacity,
@@ -33,14 +38,24 @@ export const SongItem: React.FC<SongItemProps> = ({
 }) => {
   return (
     <TouchableOpacity
-      style={[styles.container, style]}
+      style={[styles.container, isPlaying && styles.containerActive, style]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <AlbumArt uri={albumArtUri} size="small" />
-      
+      <View style={styles.albumArtWrapper}>
+        <AlbumArt uri={albumArtUri} size="small" />
+        {isPlaying && (
+          <View style={styles.playingOverlay}>
+            <Ionicons name="volume-high" size={14} color={colors.primary} />
+          </View>
+        )}
+      </View>
+
       <View style={styles.infoContainer}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text
+          style={[styles.title, isPlaying && styles.titleActive]}
+          numberOfLines={1}
+        >
           {title}
         </Text>
         <Text style={styles.artist} numberOfLines={1}>
@@ -52,15 +67,6 @@ export const SongItem: React.FC<SongItemProps> = ({
         <Text style={styles.duration}>{duration}</Text>
       )}
 
-      {isPlaying && (
-        <Ionicons
-          name="volume-high"
-          size={20}
-          color={colors.primary}
-          style={styles.playingIcon}
-        />
-      )}
-
       {onMorePress && (
         <TouchableOpacity
           onPress={onMorePress}
@@ -69,7 +75,7 @@ export const SongItem: React.FC<SongItemProps> = ({
         >
           <Ionicons
             name="ellipsis-vertical"
-            size={20}
+            size={18}
             color={colors.textMuted}
           />
         </TouchableOpacity>
@@ -86,6 +92,28 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.medium,
     padding: spacing.md,
     minHeight: 72,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  containerActive: {
+    borderColor: colors.primary + '40',
+    backgroundColor: colors.backgroundTertiary,
+  },
+  albumArtWrapper: {
+    position: 'relative',
+  },
+  playingOverlay: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary + '60',
   },
   infoContainer: {
     flex: 1,
@@ -97,6 +125,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 2,
   },
+  titleActive: {
+    color: colors.primary,
+  },
   artist: {
     ...typography.body,
     color: colors.textMuted,
@@ -104,9 +135,6 @@ const styles = StyleSheet.create({
   duration: {
     ...typography.caption,
     color: colors.textMuted,
-    marginRight: spacing.sm,
-  },
-  playingIcon: {
     marginRight: spacing.sm,
   },
   moreButton: {

@@ -1,7 +1,12 @@
+/**
+ * PlayerControls Component
+ * Play/Pause, Previous, Next controls with themed styling
+ */
+
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing } from '../../theme';
+import { colors, spacing, borderRadius, shadows } from '../../theme';
 
 interface PlayerControlsProps {
   isPlaying: boolean;
@@ -33,7 +38,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
       >
         <Ionicons
           name="play-skip-back"
-          size={24}
+          size={22}
           color={disablePrevious ? colors.textMuted : colors.textPrimary}
         />
       </TouchableOpacity>
@@ -42,12 +47,12 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
       <TouchableOpacity
         onPress={onPlayPause}
         style={styles.primaryButton}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
       >
         <Ionicons
           name={isPlaying ? 'pause' : 'play'}
-          size={32}
-          color={colors.textPrimary}
+          size={30}
+          color={colors.backgroundPrimary}
         />
       </TouchableOpacity>
 
@@ -60,7 +65,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
       >
         <Ionicons
           name="play-skip-forward"
-          size={24}
+          size={22}
           color={disableNext ? colors.textMuted : colors.textPrimary}
         />
       </TouchableOpacity>
@@ -73,24 +78,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 80,
+    paddingVertical: spacing.md,
   },
   primaryButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 68,
+    height: 68,
+    borderRadius: borderRadius.round,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: spacing.lg,
+    ...shadows.medium,
   },
   secondaryButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.round,
     backgroundColor: colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
   },
   disabled: {
     opacity: 0.3,
