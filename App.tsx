@@ -1,6 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   useFonts,
   Poppins_400Regular,
@@ -9,6 +8,7 @@ import {
   Poppins_700Bold,
 } from '@expo-google-fonts/poppins';
 import { usePlayerStore } from './src/store/playerStore';
+import { AppNavigator } from './src/navigation';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -30,18 +30,9 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <>
+      <StatusBar style="light" />
+      <AppNavigator />
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
