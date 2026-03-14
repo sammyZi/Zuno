@@ -21,7 +21,6 @@ import DraggableFlatList, {
   RenderItemParams,
 } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../navigation/types';
 import { colors, spacing, borderRadius } from '../theme';
@@ -40,30 +39,27 @@ interface QueueItem {
 
 export const QueueScreen: React.FC<Props> = ({ navigation }) => {
   const { queue, currentIndex, removeFromQueue, reorderQueue, clearQueue } = useQueueStore();
-  const { currentSong, play } = usePlayerStore();
+  const { currentSong, play, isPlaying } = usePlayerStore();
   const [isReordering, setIsReordering] = useState(false);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Force refresh when current song or index changes
+  useEffect(() => {
+    setRefreshKey(prev => prev + 1);
+  }, [currentSong?.id, currentIndex]);
 
   // Convert queue to items with indices, filter out any invalid songs
   const queueItems: QueueItem[] = queue
     .map((song, index) => ({ song, index }))
     .filter(item => item.song && item.song.id); // Filter out undefined/null songs
-  
-  // Log queue state for debugging
-  useEffect(() => {
-    console.log('[QueueScreen] Queue length:', queue.length);
-    console.log('[QueueScreen] Current index:', currentIndex);
-    console.log('[QueueScreen] Valid queue items:', queueItems.length);
-    if (queue.length > 0 && queueItems.length === 0) {
-      console.error('[QueueScreen] All queue items are invalid!', queue);
-    }
-  }, [queue.length, currentIndex]);
 
-  // Fetch recommended songs based on current song from API
+  // Fetch recommended songs based on current song
   useEffect(() => {
     const fetchRecommendations = async () => {
-      if (currentSong) {
+      // Fetch if we have a valid current song
+      if (currentSong && currentSong.id) {
         setLoadingRecommendations(true);
         try {
           const suggestions = await getSongSuggestions(currentSong.id, 10);
@@ -72,29 +68,19 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
           const filtered = suggestions.filter(song => !queueIds.has(song.id)).slice(0, 5);
           setRecommendedSongs(filtered);
         } catch (error) {
-          console.error('Failed to fetch recommendations:', error);
+          console.warn('[QueueScreen] Failed to fetch recommendations');
           setRecommendedSongs([]);
         } finally {
           setLoadingRecommendations(false);
         }
-      } else if (queue.length === 0) {
-        // If queue is empty and no current song, fetch trending songs
-        setLoadingRecommendations(true);
-        try {
-          const { searchSongs } = await import('../services/api');
-          const response = await searchSongs('trending', 1, 10);
-          setRecommendedSongs(response.data.results.slice(0, 5));
-        } catch (error) {
-          console.error('Failed to fetch trending songs:', error);
-          setRecommendedSongs([]);
-        } finally {
-          setLoadingRecommendations(false);
-        }
+      } else {
+        setRecommendedSongs([]);
+        setLoadingRecommendations(false);
       }
     };
 
     fetchRecommendations();
-  }, [currentSong?.id, queue.length]); // Re-fetch when current song changes or queue becomes empty
+  }, [currentSong?.id, queue.length]); // Re-fetch when current song changes
 
   const handlePlaySong = (song: Song, index: number) => {
     useQueueStore.getState().setCurrentIndex(index);
@@ -111,6 +97,12 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
     removeFromQueue(index);
+  };
+
+  const handleAddRecommended = (song: Song) => {
+    useQueueStore.getState().addToQueue(song, true); // Add as manual
+    // Remove from recommendations list
+    setRecommendedSongs(prev => prev.filter(s => s.id !== song.id));
   };
 
   const handleClearQueue = () => {
@@ -131,12 +123,6 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
-  const handleAddRecommended = (song: Song) => {
-    useQueueStore.getState().addToQueue(song, true); // Add as manual
-    // Remove from recommendations list
-    setRecommendedSongs(prev => prev.filter(s => s.id !== song.id));
-  };
-
   const handleDragEnd = ({ data, from, to }: { data: QueueItem[]; from: number; to: number }) => {
     if (from !== to) {
       reorderQueue(from, to);
@@ -148,7 +134,6 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
     
     // Defensive check - skip if song is undefined
     if (!song || !song.id) {
-      console.warn('[QueueScreen] Skipping undefined song at index', index);
       return null;
     }
     
@@ -160,8 +145,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
       <ScaleDecorator>
-        <Animated.View
-          entering={FadeInDown.delay(index * 30).springify()}
+        <View
           style={[
             styles.queueItem,
             isCurrentSong && styles.queueItemActive,
@@ -243,7 +227,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
             )}
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </ScaleDecorator>
     );
   };
@@ -253,7 +237,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
       <StatusBar barStyle="light-content" backgroundColor={colors.backgroundPrimary} translucent={false} />
 
       {/* Header */}
-      <Animated.View entering={FadeInDown.duration(300)} style={styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -274,22 +258,23 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Ionicons name="trash-outline" size={22} color={colors.error} />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
 
       {/* Queue List */}
       {queue.length > 0 ? (
         <>
           <DraggableFlatList
+            key={refreshKey}
             data={queueItems}
             renderItem={renderQueueItem}
-            keyExtractor={(item) => `queue-${item.song?.id || 'unknown'}-${item.index}`}
+            keyExtractor={(item) => `${item.song.id}-${item.index}`}
             onDragEnd={handleDragEnd}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             activationDistance={10}
             ListFooterComponent={
               recommendedSongs.length > 0 || loadingRecommendations ? (
-                <Animated.View entering={FadeInUp.delay(200)} style={styles.recommendedSection}>
+                <View style={styles.recommendedSection}>
                   <View style={styles.recommendedHeader}>
                     <Ionicons name="sparkles" size={18} color={colors.primary} />
                     <Text style={styles.recommendedTitle}>Recommended</Text>
@@ -304,9 +289,8 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
                       const imageUrl = getImageUrl(song.image, '150x150');
                       const artistNames = getArtistNames(song);
                       return (
-                        <Animated.View
+                        <View
                           key={`recommended-${song.id}-${index}`}
-                          entering={FadeInUp.delay(300 + index * 50).springify()}
                           style={styles.recommendedItem}
                         >
                           <TouchableOpacity
@@ -340,11 +324,11 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
                               <Ionicons name="add-circle" size={28} color={colors.primary} />
                             </TouchableOpacity>
                           </TouchableOpacity>
-                        </Animated.View>
+                        </View>
                       );
                     })
                   )}
-                </Animated.View>
+                </View>
               ) : null
             }
           />
@@ -354,7 +338,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.emptyScrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View entering={FadeInUp.duration(400)} style={styles.emptyContainer}>
+          <View style={styles.emptyContainer}>
             <View style={styles.emptyIconBg}>
               <Ionicons name="list-outline" size={48} color={colors.primary} />
             </View>
@@ -362,67 +346,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.emptySubtext}>
               Play a song to start building your queue
             </Text>
-          </Animated.View>
-
-          {/* Show recommendations even when queue is empty */}
-          {(recommendedSongs.length > 0 || loadingRecommendations) && (
-            <Animated.View entering={FadeInUp.delay(200)} style={styles.recommendedSection}>
-              <View style={styles.recommendedHeader}>
-                <Ionicons name="sparkles" size={18} color={colors.primary} />
-                <Text style={styles.recommendedTitle}>Recommended for You</Text>
-              </View>
-              {loadingRecommendations ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.loadingText}>Finding similar songs...</Text>
-                </View>
-              ) : (
-                recommendedSongs.map((song, index) => {
-                  const imageUrl = getImageUrl(song.image, '150x150');
-                  const artistNames = getArtistNames(song);
-                  return (
-                    <Animated.View
-                      key={`recommended-empty-${song.id}-${index}`}
-                      entering={FadeInUp.delay(300 + index * 50).springify()}
-                      style={styles.recommendedItem}
-                    >
-                      <TouchableOpacity
-                        style={styles.recommendedItemContent}
-                        onPress={() => handlePlaySong(song, 0)}
-                        activeOpacity={0.7}
-                      >
-                        {imageUrl ? (
-                          <Image 
-                            source={{ uri: imageUrl }} 
-                            style={styles.recommendedAlbumArt}
-                          />
-                        ) : (
-                          <View style={[styles.recommendedAlbumArt, styles.albumArtPlaceholder]}>
-                            <Ionicons name="musical-notes" size={20} color={colors.textMuted} />
-                          </View>
-                        )}
-                        <View style={styles.recommendedSongInfo}>
-                          <Text style={styles.recommendedSongTitle} numberOfLines={1}>
-                            {song.name}
-                          </Text>
-                          <Text style={styles.recommendedArtistName} numberOfLines={1}>
-                            {artistNames}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.addButton}
-                          onPress={() => handleAddRecommended(song)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <Ionicons name="add-circle" size={28} color={colors.primary} />
-                        </TouchableOpacity>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  );
-                })
-              )}
-            </Animated.View>
-          )}
+          </View>
         </ScrollView>
       )}
     </GestureHandlerRootView>

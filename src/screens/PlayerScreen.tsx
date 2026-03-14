@@ -302,6 +302,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // ── Artwork breathing animation when playing ──
   useEffect(() => {
+    'worklet';
     if (isPlaying) {
       artworkScale.value = withRepeat(
         withSequence(

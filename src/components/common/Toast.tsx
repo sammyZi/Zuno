@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Animated,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
@@ -88,28 +87,55 @@ export const Toast: React.FC<ToastProps> = ({
   };
 
   const getIcon = () => {
+    const accentColor = getAccentColor();
     switch (type) {
       case 'success':
-        return <Ionicons name="checkmark-circle" size={20} color={colors.success} />;
+        return <Ionicons name="checkmark-circle" size={20} color={accentColor} />;
       case 'error':
-        return <Ionicons name="close-circle" size={20} color={colors.error} />;
+        return <Ionicons name="close-circle" size={20} color={accentColor} />;
       case 'download':
-        return <Ionicons name="download-outline" size={20} color={colors.secondary} />;
+        return <Ionicons name="download-outline" size={20} color={accentColor} />;
       default:
-        return <Ionicons name="information-circle" size={20} color={colors.primary} />;
+        return <Ionicons name="information-circle" size={20} color={accentColor} />;
     }
   };
 
   const getBackgroundColor = () => {
     switch (type) {
       case 'success':
-        return colors.success + '20';
+        return '#1a4d2e'; // Dark green background
       case 'error':
-        return colors.error + '20';
+        return '#4d1a1a'; // Dark red background
       case 'download':
-        return colors.secondary + '20';
+        return '#1a3d4d'; // Dark blue background
       default:
-        return colors.primary + '20';
+        return '#4d3a1a'; // Dark orange background
+    }
+  };
+
+  const getBorderColor = () => {
+    switch (type) {
+      case 'success':
+        return colors.success;
+      case 'error':
+        return colors.error;
+      case 'download':
+        return colors.secondary;
+      default:
+        return colors.primary;
+    }
+  };
+
+  const getAccentColor = () => {
+    switch (type) {
+      case 'success':
+        return '#4ade80'; // Light green
+      case 'error':
+        return '#f87171'; // Light red
+      case 'download':
+        return '#60a5fa'; // Light blue
+      default:
+        return '#fb923c'; // Light orange
     }
   };
 
@@ -126,11 +152,17 @@ export const Toast: React.FC<ToastProps> = ({
         },
       ]}
     >
-      <View style={[styles.toast, { backgroundColor: getBackgroundColor() }]}>
+      <View style={[
+        styles.toast, 
+        { 
+          backgroundColor: getBackgroundColor(),
+          borderColor: getBorderColor(),
+        }
+      ]}>
         <View style={styles.content}>
           <View style={styles.iconContainer}>{getIcon()}</View>
           <View style={styles.textContainer}>
-            <Text style={styles.message} numberOfLines={1}>
+            <Text style={[styles.message, { color: getAccentColor() }]} numberOfLines={1}>
               {message}
             </Text>
             {type === 'download' && progress !== undefined && (
@@ -173,18 +205,18 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.medium,
     backgroundColor: colors.backgroundSecondary,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.sm,
-    paddingVertical: spacing.sm,
+    padding: spacing.md,
+    paddingVertical: spacing.sm + 2,
   },
   iconContainer: {
     marginRight: spacing.sm,
@@ -193,10 +225,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   message: {
-    fontSize: 12,
-    fontFamily: 'Poppins_500Medium',
-    color: colors.textPrimary,
-    lineHeight: 16,
+    fontSize: 13,
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#FFFFFF',
+    lineHeight: 18,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -217,9 +249,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   progressText: {
-    fontSize: 10,
-    fontFamily: 'Poppins_600SemiBold',
-    color: colors.secondary,
+    fontSize: 11,
+    fontFamily: 'Poppins_700Bold',
+    color: '#60a5fa',
     minWidth: 32,
     textAlign: 'right',
   },

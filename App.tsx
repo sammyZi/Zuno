@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   useFonts,
@@ -24,6 +25,31 @@ export default function App() {
   const initialize = usePlayerStore((state) => state.initialize);
   const initializeDownloads = useDownloadStore((state) => state.initializeDownloads);
   const clearQueue = useQueueStore((state) => state.clearQueue);
+  const appState = useRef(AppState.currentState);
+
+  // Clear queue when app goes to background or is closed
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (
+        appState.current.match(/active/) &&
+        nextAppState.match(/inactive|background/)
+      ) {
+        // App is going to background or being closed
+        console.log('[App] App going to background, clearing queue');
+        clearQueue();
+        try {
+          await AsyncStorage.removeItem('queue-storage');
+        } catch (error) {
+          console.warn('[App] Failed to clear queue storage on background:', error);
+        }
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [clearQueue]);
 
   // Initialize audio service, downloads, and clear queue on app start
   useEffect(() => {

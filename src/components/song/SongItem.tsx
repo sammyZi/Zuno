@@ -69,7 +69,7 @@ export const SongItem: React.FC<SongItemProps> = ({
       activeOpacity={0.6}
     >
       {/* Square album art */}
-      <AlbumArt uri={albumArtUri} size="small" />
+      <AlbumArt uri={albumArtUri} size="medium" />
 
       {/* Info */}
       <View style={styles.info}>
@@ -84,27 +84,12 @@ export const SongItem: React.FC<SongItemProps> = ({
         </Text>
       </View>
 
-      {/* Favorite Heart */}
-      {song && (
-        <TouchableOpacity
-          style={styles.favButton}
-          onPress={() => toggleFavorite(song)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name={isFav ? 'heart' : 'heart-outline'}
-            size={20}
-            color={isFav ? colors.primary : colors.textMuted}
-          />
-        </TouchableOpacity>
-      )}
-
       {/* Downloaded Indicator */}
       {isOffline && (
         <View style={styles.downloadedIndicator}>
           <Ionicons
             name="checkmark-circle"
-            size={16}
+            size={18}
             color={colors.secondary}
           />
         </View>
@@ -118,7 +103,7 @@ export const SongItem: React.FC<SongItemProps> = ({
       >
         <Ionicons
           name={isPlaying ? 'pause' : 'play'}
-          size={14}
+          size={12}
           color={isPlaying ? colors.backgroundPrimary : colors.backgroundPrimary}
         />
       </TouchableOpacity>
@@ -141,7 +126,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   info: {
     flex: 1,
@@ -162,21 +147,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
   },
-  favButton: {
-    padding: spacing.xs,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.xs,
-  },
   downloadedIndicator: {
     padding: spacing.xs,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.xs,
+    marginRight: spacing.sm,
   },
   playButton: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: borderRadius.round,
     backgroundColor: colors.primary,
     justifyContent: 'center',

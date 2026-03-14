@@ -148,8 +148,8 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
           >
             <Ionicons
               name={isPlaying ? 'pause' : 'play'}
-              size={18}
-              color={colors.textPrimary}
+              size={20}
+              color={colors.primary}
               style={!isPlaying ? { marginLeft: 2 } : undefined}
             />
           </AnimatedTouchable>
@@ -158,7 +158,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
             const next = nextSong();
             if (next) await play(next);
           }} activeOpacity={0.7}>
-            <Ionicons name="play-skip-forward" size={18} color={colors.textPrimary} />
+            <Ionicons name="play-skip-forward" size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     bottom: 70,
     left: 8,
     right: 8,
-    height: 62,
+    height: 68,
     backgroundColor: 'rgba(30, 33, 42, 0.97)',
     borderRadius: 14,
     overflow: 'hidden',
@@ -208,8 +208,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   albumArt: {
-    width: 42,
-    height: 42,
+    width: 48,
+    height: 48,
     borderRadius: 8,
     backgroundColor: colors.backgroundTertiary,
   },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
   playButton: {
     width: 36,
@@ -242,8 +242,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nextButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },

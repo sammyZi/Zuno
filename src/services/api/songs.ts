@@ -64,7 +64,8 @@ export const getSongById = async (id: string): Promise<Song> => {
 };
 
 /**
- * Get song suggestions
+ * Get song suggestions (workaround using search)
+ * Since the suggestions API doesn't exist, we search for songs by the same artist
  * @param id - Song ID
  * @param limit - Number of suggestions (default: 10)
  * @returns Promise with suggested songs
@@ -73,11 +74,29 @@ export const getSongSuggestions = async (
   id: string,
   limit: number = 10
 ): Promise<Song[]> => {
-  const response = await apiClient.get<{ success: boolean; data: Song[] }>(
-    ENDPOINTS.GET_SONG_SUGGESTIONS(id),
-    {
-      params: { limit },
+  try {
+    // First, get the current song details to know the artist
+    const currentSong = await getSongById(id);
+    
+    // Extract artist name (use primary artist)
+    const artistName = currentSong.primaryArtists || currentSong.artists?.[0]?.name || '';
+    
+    if (!artistName) {
+      // If no artist, return empty array
+      return [];
     }
-  );
-  return response.data.data;
+    
+    // Search for songs by the same artist
+    const searchResults = await searchSongs(artistName, 1, limit + 5);
+    
+    // Filter out the current song and return up to limit songs
+    const suggestions = searchResults.data.results
+      .filter(song => song.id !== id)
+      .slice(0, limit);
+    
+    return suggestions;
+  } catch (error) {
+    console.warn('[getSongSuggestions] Failed to get suggestions:', error);
+    return [];
+  }
 };

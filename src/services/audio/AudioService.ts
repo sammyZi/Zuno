@@ -67,20 +67,11 @@ class AudioServiceClass {
         return;
       } catch (error) {
         retryCount++;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        
-        // Suppress keep-awake errors as they're not critical
-        if (errorMessage.includes('ExpoKeepAwake') || errorMessage.includes('activity is no longer available')) {
-          console.log('[AudioService] Keep-awake not available, continuing without it');
-          this.isInitialized = true;
-          return;
-        }
-        
         console.warn(`[AudioService] Initialization attempt ${retryCount} failed:`, error);
         
         if (retryCount >= maxRetries) {
           console.error('[AudioService] Failed to initialize after', maxRetries, 'attempts');
-          // Mark as initialized anyway - app can work without keep-awake
+          // Mark as initialized anyway - app can work without full audio mode setup
           this.isInitialized = true;
           return;
         }
