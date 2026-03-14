@@ -732,7 +732,7 @@ This project is created as part of an internship assignment and is for education
 
 ## 📞 Support
 
-For issues or questions, please contact [your-email@example.com]
+For issues or questions, please contact [bhingesamarth@gmail.com]
 
 ---
 
