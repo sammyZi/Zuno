@@ -150,7 +150,16 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* Album Art */}
             <View style={styles.albumArtContainer}>
-              <Image source={{ uri: imageUrl }} style={styles.albumArt} />
+              {imageUrl ? (
+                <Image 
+                  source={{ uri: imageUrl }} 
+                  style={styles.albumArt}
+                />
+              ) : (
+                <View style={[styles.albumArt, styles.albumArtPlaceholder]}>
+                  <Ionicons name="musical-notes" size={24} color={colors.textMuted} />
+                </View>
+              )}
               {isCurrentSong && (
                 <View style={styles.playingIndicator}>
                   <View style={styles.playingBar} />
@@ -208,7 +217,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.backgroundPrimary} translucent={false} />
 
       {/* Header */}
       <Animated.View entering={FadeInDown.duration(300)} style={styles.header}>
@@ -272,7 +281,16 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
                             onPress={() => handlePlaySong(song, queue.length)}
                             activeOpacity={0.7}
                           >
-                            <Image source={{ uri: imageUrl }} style={styles.recommendedAlbumArt} />
+                            {imageUrl ? (
+                              <Image 
+                                source={{ uri: imageUrl }} 
+                                style={styles.recommendedAlbumArt}
+                              />
+                            ) : (
+                              <View style={[styles.recommendedAlbumArt, styles.albumArtPlaceholder]}>
+                                <Ionicons name="musical-notes" size={20} color={colors.textMuted} />
+                              </View>
+                            )}
                             <View style={styles.recommendedSongInfo}>
                               <Text style={styles.recommendedSongTitle} numberOfLines={1}>
                                 {song.name}
@@ -323,8 +341,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.sm,
-    paddingTop: (StatusBar.currentHeight ?? 24) + 8,
+    paddingTop: spacing.md,
     paddingBottom: spacing.md,
+    backgroundColor: colors.backgroundPrimary,
   },
   backButton: {
     width: 44,
@@ -400,6 +419,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: borderRadius.small,
+    backgroundColor: colors.backgroundTertiary,
+  },
+  albumArtPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   playingIndicator: {
     position: 'absolute',
@@ -539,6 +563,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: borderRadius.small,
     marginRight: spacing.md,
+    backgroundColor: colors.backgroundTertiary,
   },
   recommendedSongInfo: {
     flex: 1,

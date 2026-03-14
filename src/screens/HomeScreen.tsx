@@ -898,7 +898,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <>
             <View style={styles.appNameContainer}>
               <Ionicons name="musical-notes" size={28} color={colors.primary} />
-              <Text style={styles.appName}>Mume</Text>
+              <Text style={styles.appName}>Zuno</Text>
             </View>
             <TouchableOpacity
               style={styles.searchButton}

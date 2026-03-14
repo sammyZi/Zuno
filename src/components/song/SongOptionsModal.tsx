@@ -31,6 +31,10 @@ interface SongOptionsModalProps {
   onClose: () => void;
   onAddToQueue: () => void;
   onAddToPlaylist?: () => void;
+  isDownloaded?: boolean;
+  isDownloading?: boolean;
+  onDownload?: () => void;
+  onDeleteDownload?: () => void;
 }
 
 export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
@@ -39,6 +43,10 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
   onClose,
   onAddToQueue,
   onAddToPlaylist,
+  isDownloaded = false,
+  isDownloading = false,
+  onDownload,
+  onDeleteDownload,
 }) => {
   const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
@@ -74,6 +82,14 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
       iconBg: isFav ? 'rgba(255, 75, 110, 0.2)' : 'rgba(255, 75, 110, 0.12)',
       iconColor: '#FF4B6E',
     },
+    ...(onDownload || onDeleteDownload ? [{
+      key: 'download',
+      icon: isDownloading ? ('hourglass-outline' as const) : isDownloaded ? ('trash-outline' as const) : ('download-outline' as const),
+      label: isDownloading ? 'Downloading...' : isDownloaded ? 'Delete Download' : 'Download',
+      subtitle: isDownloading ? 'Please wait' : isDownloaded ? 'Remove from device' : 'Save for offline',
+      iconBg: 'rgba(138, 99, 255, 0.12)',
+      iconColor: '#8A63FF',
+    }] : []),
     {
       key: 'share',
       icon: 'share-outline' as const,
@@ -96,6 +112,18 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
       case 'favorite':
         toggleFavorite(song);
         // Don't close — let user see the state change
+        break;
+      case 'download':
+        if (isDownloading) {
+          // Do nothing while downloading
+          return;
+        }
+        if (isDownloaded && onDeleteDownload) {
+          onDeleteDownload();
+        } else if (!isDownloaded && onDownload) {
+          onDownload();
+        }
+        onClose();
         break;
       case 'share':
         onClose();

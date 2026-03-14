@@ -13,6 +13,7 @@ import {
 import { Song } from '../../types';
 import { getAudioUrl } from '../../utils/audio';
 import { DownloadService } from '../storage';
+import { NotificationService } from './NotificationService';
 
 export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'stopped' | 'error';
 
@@ -44,8 +45,8 @@ class AudioServiceClass {
     
     while (retryCount < maxRetries) {
       try {
-        // Wait for activity to be ready
-        await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+        // Wait for activity to be ready (longer delay on first attempt)
+        await new Promise(resolve => setTimeout(resolve, 300 * (retryCount + 1)));
         
         // Configure audio mode for background playback
         await Audio.setAudioModeAsync({
@@ -59,9 +60,22 @@ class AudioServiceClass {
 
         this.isInitialized = true;
         console.log('[AudioService] Initialized with background playback support');
+        
+        // Initialize notification service
+        await NotificationService.initialize();
+        
         return;
       } catch (error) {
         retryCount++;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        // Suppress keep-awake errors as they're not critical
+        if (errorMessage.includes('ExpoKeepAwake') || errorMessage.includes('activity is no longer available')) {
+          console.log('[AudioService] Keep-awake not available, continuing without it');
+          this.isInitialized = true;
+          return;
+        }
+        
         console.warn(`[AudioService] Initialization attempt ${retryCount} failed:`, error);
         
         if (retryCount >= maxRetries) {
@@ -164,6 +178,11 @@ class AudioServiceClass {
         await this.sound.playAsync();
         this.playbackStatus = 'playing';
         console.log('[AudioService] Playback started');
+        
+        // Update notification
+        if (this.currentSong) {
+          await NotificationService.updateNotification(this.currentSong, true, this.sound);
+        }
       }
     } catch (error) {
       this.playbackStatus = 'error';
@@ -186,6 +205,11 @@ class AudioServiceClass {
       await this.sound.pauseAsync();
       this.playbackStatus = 'paused';
       console.log('[AudioService] Playback paused');
+      
+      // Update notification
+      if (this.currentSong) {
+        await NotificationService.updateNotification(this.currentSong, false, this.sound);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to pause audio';
       console.error('[AudioService] Pause error:', errorMessage);

@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   useFonts,
   Poppins_400Regular,
@@ -9,6 +10,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { usePlayerStore } from './src/store/playerStore';
 import { useDownloadStore } from './src/store/downloadStore';
+import { useQueueStore } from './src/store/queueStore';
 import { AppNavigator } from './src/navigation';
 
 export default function App() {
@@ -21,22 +23,41 @@ export default function App() {
 
   const initialize = usePlayerStore((state) => state.initialize);
   const initializeDownloads = useDownloadStore((state) => state.initializeDownloads);
+  const clearQueue = useQueueStore((state) => state.clearQueue);
 
-  // Initialize audio service and downloads on app start
+  // Initialize audio service, downloads, and clear queue on app start
   useEffect(() => {
-    // Delay initialization to ensure activity is ready
-    const timer = setTimeout(() => {
-      initialize().catch(err => {
-        console.warn('[App] Audio initialization failed:', err);
-      });
-      
-      initializeDownloads().catch(err => {
-        console.warn('[App] Download initialization failed:', err);
-      });
-    }, 500);
+    const initializeApp = async () => {
+      // Clear persisted queue storage first
+      try {
+        await AsyncStorage.removeItem('queue-storage');
+        console.log('[App] Cleared persisted queue storage');
+      } catch (error) {
+        console.warn('[App] Failed to clear queue storage:', error);
+      }
 
-    return () => clearTimeout(timer);
-  }, [initialize, initializeDownloads]);
+      // Longer delay to ensure activity is fully ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      try {
+        await initialize();
+      } catch (err) {
+        console.warn('[App] Audio initialization failed:', err);
+      }
+      
+      try {
+        await initializeDownloads();
+      } catch (err) {
+        console.warn('[App] Download initialization failed:', err);
+      }
+
+      // Clear queue in memory
+      clearQueue();
+      console.log('[App] Queue cleared on app start');
+    };
+
+    initializeApp();
+  }, [initialize, initializeDownloads, clearQueue]);
 
   if (!fontsLoaded) {
     return null; // Or a loading screen

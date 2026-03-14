@@ -94,14 +94,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
               // Auto-populate suggestions
               await queueState.autoPopulateFromSuggestions(currentSong.id);
               
-              // Try to get next song again after populating
-              const newNextSong = queueState.nextSong();
-              if (newNextSong) {
-                console.log('[PlayerStore] Auto-playing suggested song:', newNextSong.name);
-                await new Promise(resolve => setTimeout(resolve, 100));
-                await get().play(newNextSong);
+              // Get updated queue state
+              const updatedQueueState = useQueueStore.getState();
+              
+              // Move to next index if queue was populated
+              if (updatedQueueState.queue.length > updatedQueueState.currentIndex + 1) {
+                updatedQueueState.setCurrentIndex(updatedQueueState.currentIndex + 1);
+                const newNextSong = updatedQueueState.queue[updatedQueueState.currentIndex];
+                
+                if (newNextSong) {
+                  console.log('[PlayerStore] Auto-playing suggested song:', newNextSong.name);
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  await get().play(newNextSong);
+                } else {
+                  console.log('[PlayerStore] No suggestions available, stopping playback');
+                }
               } else {
-                console.log('[PlayerStore] No suggestions available, stopping playback');
+                console.log('[PlayerStore] Failed to populate suggestions, stopping playback');
               }
             }
           }
@@ -135,21 +144,30 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     try {
-      set({ error: null });
+      set({ error: null, isLoading: true });
 
       // If new song, load it first
       if (!state.currentSong || state.currentSong.id !== targetSong.id) {
-        set({ currentSong: targetSong, position: 0, duration: 0 });
+        // Stop current playback to prevent glitching
+        if (state.isPlaying) {
+          await AudioService.pauseAudio();
+        }
+        
+        set({ currentSong: targetSong, position: 0, duration: 0, isPlaying: false });
+        
+        // Small delay to ensure clean transition
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
         await AudioService.loadAudio(targetSong);
       }
 
       // Play the audio
       await AudioService.playAudio();
-      set({ isPlaying: true });
+      set({ isPlaying: true, isLoading: false });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to play audio';
       console.error('[PlayerStore] Play error:', errorMessage);
-      set({ error: errorMessage, isPlaying: false });
+      set({ error: errorMessage, isPlaying: false, isLoading: false });
     }
   },
 

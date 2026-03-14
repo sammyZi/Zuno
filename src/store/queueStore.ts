@@ -31,6 +31,7 @@ interface QueueState {
   toggleShuffle: () => void;
   setRepeat: (mode: RepeatMode) => void;
   clearQueue: () => void;
+  resetQueue: () => void;
   setQueue: (songs: Song[], startIndex?: number) => void;
   playAndBuildQueue: (song: Song, contextSongs?: Song[]) => void;
   autoPopulateFromSuggestions: (songId: string) => Promise<void>;
@@ -159,7 +160,7 @@ export const useQueueStore = create<QueueState>()(
             set({ currentIndex: 0 });
             return queue[0];
           }
-          // No repeat - stay at end
+          // No repeat - return null to trigger auto-populate
           return null;
         }
 
@@ -243,6 +244,29 @@ export const useQueueStore = create<QueueState>()(
           originalQueue: [],
           manuallyAddedIndices: [],
         }),
+
+      resetQueue: () => {
+        // Reset queue but keep current song if playing
+        const state = get();
+        if (state.currentIndex >= 0 && state.queue[state.currentIndex]) {
+          const currentSong = state.queue[state.currentIndex];
+          set({
+            queue: [currentSong],
+            currentIndex: 0,
+            originalQueue: [currentSong],
+            manuallyAddedIndices: [],
+            shuffle: false,
+          });
+        } else {
+          set({
+            queue: [],
+            currentIndex: -1,
+            originalQueue: [],
+            manuallyAddedIndices: [],
+            shuffle: false,
+          });
+        }
+      },
 
       setQueue: (songs, startIndex = 0) =>
         set({
