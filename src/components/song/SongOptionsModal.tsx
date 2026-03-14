@@ -3,7 +3,7 @@
  * Bottom sheet modal for song actions (Add to Queue, etc.)
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -20,12 +20,14 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { getImageUrl, getArtistNames } from '../../utils/audio';
+import { PlaylistSelectorModal } from '../playlist/PlaylistSelectorModal';
 
 interface SongOptionsModalProps {
   visible: boolean;
   song: Song | null;
   onClose: () => void;
   onAddToQueue: () => void;
+  onAddToPlaylist?: () => void;
 }
 
 export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
@@ -33,7 +35,10 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
   song,
   onClose,
   onAddToQueue,
+  onAddToPlaylist,
 }) => {
+  const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
+
   if (!song) return null;
 
   const imageUrl = getImageUrl(song.image, 'medium');
@@ -42,6 +47,10 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
   const handleAddToQueue = () => {
     onAddToQueue();
     onClose();
+  };
+
+  const handleAddToPlaylist = () => {
+    setShowPlaylistSelector(true);
   };
 
   return (
@@ -76,6 +85,11 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
                   <Text style={styles.optionText}>Add to Queue</Text>
                 </TouchableOpacity>
 
+                <TouchableOpacity style={styles.option} onPress={handleAddToPlaylist}>
+                  <Ionicons name="list-outline" size={24} color={colors.textPrimary} />
+                  <Text style={styles.optionText}>Add to Playlist</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity style={styles.option} onPress={onClose}>
                   <Ionicons name="heart-outline" size={24} color={colors.textPrimary} />
                   <Text style={styles.optionText}>Add to Favorites</Text>
@@ -95,6 +109,13 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+
+      {/* Playlist Selector Modal */}
+      <PlaylistSelectorModal
+        visible={showPlaylistSelector}
+        song={song}
+        onClose={() => setShowPlaylistSelector(false)}
+      />
     </Modal>
   );
 };
@@ -154,6 +175,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     backgroundColor: colors.backgroundTertiary,
     borderRadius: borderRadius.medium,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
     alignItems: 'center',
   },
   cancelText: {

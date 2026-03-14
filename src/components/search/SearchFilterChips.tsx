@@ -59,12 +59,14 @@ export const SearchFilterChips: React.FC<SearchFilterChipsProps> = ({
 
 const styles = StyleSheet.create({
   scrollView: {
-    // Allow natural height
+    maxHeight: 50,
+    flexGrow: 0,
   },
   container: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    gap: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   chip: {
     paddingHorizontal: spacing.md,
@@ -75,6 +77,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: spacing.sm,
   },
   chipActive: {
     backgroundColor: colors.primary,

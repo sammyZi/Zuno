@@ -37,18 +37,16 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   SharedValue,
-  interpolate,
-  Extrapolation,
-  runOnJS,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { StackScreenProps } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { ProgressBar } from '../components/player/ProgressBar';
+import { SongOptionsModal } from '../components/song/SongOptionsModal';
 import { usePlayerStore } from '../store/playerStore';
 import { useQueueStore, RepeatMode } from '../store/queueStore';
+import { useFavoritesStore } from '../store/favoritesStore';
 import { getImageUrl, getArtistNames } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -256,7 +254,13 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
     setRepeat,
     nextSong,
     previousSong,
+    addToQueue,
   } = useQueueStore();
+
+  const { toggleFavorite, isFavorite } = useFavoritesStore();
+
+  // ── Modal state ──
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
 
   // ── Shared animation values ──
   const artworkScale = useSharedValue(1);
@@ -364,12 +368,35 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
     setRepeat(modes[(idx + 1) % modes.length]);
   };
 
+  const handleLikeToggle = () => {
+    if (currentSong) {
+      toggleFavorite(currentSong);
+    }
+  };
+
+  const handleAddToQueue = () => {
+    if (currentSong) {
+      addToQueue(currentSong);
+    }
+  };
+
+  const handleAddToPlaylist = () => {
+    if (currentSong) {
+      // Add to queue (playlist functionality)
+      addToQueue(currentSong);
+    }
+  };
+
   const getRepeatIcon = (): keyof typeof Ionicons.glyphMap => {
     switch (repeat) {
-      case 'one':  return 'repeat-outline';
+      case 'one':  return 'repeat-outline'; // Will show with badge/different styling
       case 'all':  return 'repeat';
       default:     return 'repeat-outline';
     }
+  };
+
+  const getRepeatBadge = (): string | null => {
+    return repeat === 'one' ? '1' : null;
   };
 
   // ── Empty state ──
@@ -408,7 +435,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
         onPress={handleUpperSectionPress}
         style={styles.upperSection}
       >
-        {/* ── Header: Back arrow + search + 3-dot menu ── */}
+        {/* ── Header: Back arrow + 3-dot menu ── */}
         <Animated.View
           entering={FadeInDown.duration(400).delay(100)}
           style={styles.header}
@@ -421,10 +448,11 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
-            <Ionicons name="search-outline" size={22} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.headerBtn} 
+            activeOpacity={0.7}
+            onPress={() => setShowOptionsModal(true)}
+          >
             <Ionicons name="ellipsis-horizontal" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
         </Animated.View>
@@ -565,7 +593,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Bottom Actions: shuffle, timer, cast, more */}
+        {/* Bottom Actions: shuffle, repeat, like */}
         <Animated.View
           entering={FadeInUp.duration(400).delay(450)}
           style={styles.bottomActions}
@@ -579,19 +607,30 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomBtn} onPress={handleRepeatToggle} activeOpacity={0.7}>
-            <Ionicons
-              name={getRepeatIcon()}
-              size={22}
-              color={repeat !== 'off' ? colors.secondary : colors.textMuted}
+            <View style={styles.iconWithBadge}>
+              <Ionicons
+                name={getRepeatIcon()}
+                size={22}
+                color={repeat !== 'off' ? colors.secondary : colors.textMuted}
+              />
+              {getRepeatBadge() && (
+                <View style={styles.repeatBadge}>
+                  <Text style={styles.repeatBadgeText}>{getRepeatBadge()}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.bottomBtn} 
+            activeOpacity={0.7}
+            onPress={handleLikeToggle}
+          >
+            <Ionicons 
+              name={currentSong && isFavorite(currentSong.id) ? 'heart' : 'heart-outline'} 
+              size={22} 
+              color={currentSong && isFavorite(currentSong.id) ? colors.primary : colors.textMuted} 
             />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.bottomBtn} activeOpacity={0.7}>
-            <Ionicons name="tv-outline" size={22} color={colors.textMuted} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.bottomBtn} activeOpacity={0.7}>
-            <Ionicons name="ellipsis-vertical" size={22} color={colors.textMuted} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -604,6 +643,15 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={styles.lyricsLabel}>Lyrics</Text>
         </Animated.View>
       </View>
+
+      {/* Song Options Modal */}
+      <SongOptionsModal
+        visible={showOptionsModal}
+        song={currentSong}
+        onClose={() => setShowOptionsModal(false)}
+        onAddToQueue={handleAddToQueue}
+        onAddToPlaylist={handleAddToPlaylist}
+      />
     </View>
   );
 };
@@ -833,6 +881,29 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  iconWithBadge: {
+    position: 'relative',
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  repeatBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  repeatBadgeText: {
+    fontSize: 9,
+    fontFamily: 'Poppins_700Bold',
+    color: colors.backgroundPrimary,
   },
 
   // ── Lyrics section ──

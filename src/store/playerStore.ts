@@ -71,10 +71,22 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           }
         },
 
-        onPlaybackEnd: () => {
+        onPlaybackEnd: async () => {
           console.log('[PlayerStore] Playback ended');
-          set({ isPlaying: false, position: 0 });
-          // TODO: Integrate with queue to play next song
+          set({ isPlaying: false });
+          
+          // Get next song from queue based on repeat mode
+          const { useQueueStore } = await import('./queueStore');
+          const nextSong = useQueueStore.getState().nextSong();
+          
+          if (nextSong) {
+            console.log('[PlayerStore] Auto-playing next song:', nextSong.name);
+            // Play next song
+            await get().play(nextSong);
+          } else {
+            console.log('[PlayerStore] No next song, stopping playback');
+            set({ position: 0 });
+          }
         },
 
         onError: (error: string) => {
