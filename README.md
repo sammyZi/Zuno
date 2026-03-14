@@ -1,4 +1,4 @@
-# Music Player App
+# Zuno - Music Player App
 
 A feature-rich React Native music streaming application built with Expo, integrating with the JioSaavn API. This app provides a seamless music listening experience with background playback, queue management, offline downloads, and a beautiful dark-themed UI.
 
