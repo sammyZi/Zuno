@@ -14,6 +14,7 @@ import { AlbumArt } from '../components/song/AlbumArt';
 import { SongItem } from '../components/song/SongItem';
 import { ProgressBar } from '../components/player/ProgressBar';
 import { PlayerControls } from '../components/player/PlayerControls';
+import { ShuffleTestComponent } from '../components/examples/ShuffleTestComponent';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
 export const ComponentShowcaseScreen: React.FC = () => {
@@ -160,6 +161,11 @@ export const ComponentShowcaseScreen: React.FC = () => {
             disableNext
             disablePrevious
           />
+        </SectionCard>
+
+        {/* Shuffle Test Component */}
+        <SectionCard title="Shuffle Mode Testing">
+          <ShuffleTestComponent />
         </SectionCard>
       </ScrollView>
     </SafeAreaView>
