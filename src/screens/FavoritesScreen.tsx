@@ -41,7 +41,7 @@ export const FavoritesScreen: React.FC = () => {
 
   const handleAddToQueue = () => {
     if (selectedSong) {
-      addToQueue(selectedSong);
+      addToQueue(selectedSong, true); // Add as manual
     }
   };
 

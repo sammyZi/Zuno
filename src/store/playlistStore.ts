@@ -14,6 +14,7 @@ interface PlaylistState {
   playlists: Playlist[];
   createPlaylist: (name: string) => void;
   deletePlaylist: (id: string) => void;
+  renamePlaylist: (id: string, newName: string) => void;
   addSongToPlaylist: (playlistId: string, song: Song) => void;
   removeSongFromPlaylist: (playlistId: string, songId: string) => void;
   getPlaylist: (id: string) => Playlist | undefined;
@@ -37,6 +38,14 @@ export const usePlaylistStore = create<PlaylistState>()(
       deletePlaylist: (id) => {
         set({
           playlists: get().playlists.filter((p) => p.id !== id),
+        });
+      },
+
+      renamePlaylist: (id, newName) => {
+        set({
+          playlists: get().playlists.map((playlist) =>
+            playlist.id === id ? { ...playlist, name: newName } : playlist
+          ),
         });
       },
 

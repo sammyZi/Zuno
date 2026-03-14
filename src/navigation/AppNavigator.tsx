@@ -18,6 +18,7 @@ import {
   AlbumScreen,
 } from '../screens';
 import { ComponentShowcaseScreen } from '../screens/ComponentShowcaseScreen';
+import { PlaylistDetailScreen } from '../screens/PlaylistDetailScreen';
 import { MiniPlayer } from '../components/player';
 import { colors } from '../theme/colors';
 import { navigationRef, getActiveRouteName } from './navigationRef';
@@ -103,7 +104,19 @@ export const AppNavigator: React.FC = () => {
             component={QueueScreen}
             options={{
               headerShown: false,
-              cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+              cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
+              gestureEnabled: true,
+              gestureDirection: 'vertical',
+              transitionSpec: {
+                open: {
+                  animation: 'spring',
+                  config: { damping: 22, stiffness: 220, mass: 0.8 },
+                },
+                close: {
+                  animation: 'spring',
+                  config: { damping: 22, stiffness: 220, mass: 0.8 },
+                },
+              },
             }}
           />
           <Stack.Screen
@@ -125,6 +138,14 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen
             name="Album"
             component={AlbumScreen}
+            options={{
+              headerShown: false,
+              cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+            }}
+          />
+          <Stack.Screen
+            name="PlaylistDetail"
+            component={PlaylistDetailScreen}
             options={{
               headerShown: false,
               cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,

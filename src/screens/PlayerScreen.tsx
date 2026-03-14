@@ -23,6 +23,9 @@ import {
   StatusBar,
   Image,
   GestureResponderEvent,
+  Modal,
+  ScrollView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -261,6 +264,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // ── Modal state ──
   const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
 
   // ── Shared animation values ──
   const artworkScale = useSharedValue(1);
@@ -376,14 +380,14 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleAddToQueue = () => {
     if (currentSong) {
-      addToQueue(currentSong);
+      addToQueue(currentSong, true); // Add as manual
     }
   };
 
   const handleAddToPlaylist = () => {
     if (currentSong) {
       // Add to queue (playlist functionality)
-      addToQueue(currentSong);
+      addToQueue(currentSong, true); // Add as manual
     }
   };
 
@@ -593,7 +597,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Bottom Actions: shuffle, repeat, like */}
+        {/* Bottom Actions: shuffle, repeat, like, queue */}
         <Animated.View
           entering={FadeInUp.duration(400).delay(450)}
           style={styles.bottomActions}
@@ -632,6 +636,14 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
               color={currentSong && isFavorite(currentSong.id) ? colors.primary : colors.textMuted} 
             />
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.bottomBtn} 
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Queue')}
+          >
+            <Ionicons name="list" size={22} color={colors.textMuted} />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Lyrics pull-up */}
@@ -639,8 +651,14 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           entering={FadeInUp.duration(400).delay(500)}
           style={styles.lyricsSection}
         >
-          <Ionicons name="chevron-up" size={20} color={colors.textMuted} />
-          <Text style={styles.lyricsLabel}>Lyrics</Text>
+          <TouchableOpacity 
+            style={styles.lyricsButton}
+            onPress={() => setShowLyrics(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-up" size={20} color={colors.textMuted} />
+            <Text style={styles.lyricsLabel}>Lyrics</Text>
+          </TouchableOpacity>
         </Animated.View>
       </View>
 
@@ -652,6 +670,63 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
         onAddToQueue={handleAddToQueue}
         onAddToPlaylist={handleAddToPlaylist}
       />
+
+      {/* Lyrics Modal */}
+      <Modal
+        visible={showLyrics}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowLyrics(false)}
+      >
+        <View style={styles.lyricsModal}>
+          <StatusBar barStyle="light-content" />
+          
+          {/* Lyrics Header */}
+          <View style={styles.lyricsHeader}>
+            <TouchableOpacity
+              style={styles.lyricsCloseButton}
+              onPress={() => setShowLyrics(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-down" size={28} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.lyricsHeaderTitle}>Lyrics</Text>
+            <View style={styles.lyricsHeaderRight} />
+          </View>
+
+          {/* Song Info in Lyrics */}
+          <View style={styles.lyricsSongInfo}>
+            <Image
+              source={{ uri: albumArtUrl }}
+              style={styles.lyricsAlbumArt}
+            />
+            <Text style={styles.lyricsSongTitle} numberOfLines={1}>
+              {currentSong.name}
+            </Text>
+            <Text style={styles.lyricsArtistName} numberOfLines={1}>
+              {artistNames}
+            </Text>
+          </View>
+
+          {/* Lyrics Content */}
+          <ScrollView
+            style={styles.lyricsScrollView}
+            contentContainerStyle={styles.lyricsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.lyricsText}>
+              {/* Placeholder lyrics - in a real app, fetch from API */}
+              {`[Verse 1]\nLorem ipsum dolor sit amet\nConsectetur adipiscing elit\nSed do eiusmod tempor incididunt\nUt labore et dolore magna aliqua\n\n[Chorus]\nUt enim ad minim veniam\nQuis nostrud exercitation ullamco\nLaboris nisi ut aliquip ex ea\nCommodo consequat\n\n[Verse 2]\nDuis aute irure dolor in\nReprehenderit in voluptate velit\nEsse cillum dolore eu fugiat\nNulla pariatur excepteur sint\n\n[Chorus]\nUt enim ad minim veniam\nQuis nostrud exercitation ullamco\nLaboris nisi ut aliquip ex ea\nCommodo consequat\n\n[Bridge]\nSed ut perspiciatis unde omnis\nIste natus error sit voluptatem\nAccusantium doloremque laudantium\nTotam rem aperiam eaque ipsa\n\n[Chorus]\nUt enim ad minim veniam\nQuis nostrud exercitation ullamco\nLaboris nisi ut aliquip ex ea\nCommodo consequat`}
+            </Text>
+            <View style={styles.lyricsFooter}>
+              <Ionicons name="musical-note" size={16} color={colors.textMuted} />
+              <Text style={styles.lyricsFooterText}>
+                Lyrics powered by music API
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -912,11 +987,93 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: spacing.sm,
   },
+  lyricsButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
   lyricsLabel: {
     fontSize: 12,
     fontFamily: 'Poppins_500Medium',
     color: colors.textMuted,
     marginTop: 2,
+  },
+
+  // ── Lyrics Modal ──
+  lyricsModal: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
+  },
+  lyricsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingTop: (StatusBar.currentHeight ?? 24) + 12,
+    paddingBottom: spacing.md,
+  },
+  lyricsCloseButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lyricsHeaderTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textPrimary,
+  },
+  lyricsHeaderRight: {
+    width: 44,
+  },
+  lyricsSongInfo: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  lyricsAlbumArt: {
+    width: 120,
+    height: 120,
+    borderRadius: borderRadius.large,
+    marginBottom: spacing.md,
+  },
+  lyricsSongTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins_700Bold',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  lyricsArtistName: {
+    fontSize: 14,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  lyricsScrollView: {
+    flex: 1,
+  },
+  lyricsContent: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+  },
+  lyricsText: {
+    fontSize: 16,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textPrimary,
+    lineHeight: 28,
+    textAlign: 'center',
+  },
+  lyricsFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xl,
+    gap: spacing.xs,
+  },
+  lyricsFooterText: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
   },
 
   // ── Empty ──

@@ -8,3 +8,4 @@ export { useQueueStore, type RepeatMode } from './queueStore';
 export { useSearchStore } from './searchStore';
 export { useDataStore } from './dataStore';
 export { useFavoritesStore } from './favoritesStore';
+export { useHistoryStore } from './historyStore';

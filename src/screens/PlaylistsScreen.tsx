@@ -17,12 +17,21 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
+import type { StackScreenProps } from '@react-navigation/stack';
+import type { CompositeScreenProps } from '@react-navigation/native';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { usePlaylistStore, Playlist } from '../store/playlistStore';
+import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-export const PlaylistsScreen: React.FC = () => {
-  const { playlists, createPlaylist, deletePlaylist } = usePlaylistStore();
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<TabParamList, 'Playlists'>,
+  StackScreenProps<RootStackParamList>
+>;
+
+export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
+  const { playlists, createPlaylist } = usePlaylistStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
 
@@ -34,8 +43,16 @@ export const PlaylistsScreen: React.FC = () => {
     }
   };
 
+  const handleOpenPlaylist = (playlist: Playlist) => {
+    navigation.navigate('PlaylistDetail', { playlistId: playlist.id });
+  };
+
   const renderPlaylistItem = ({ item }: { item: Playlist }) => (
-    <TouchableOpacity style={styles.playlistCard}>
+    <TouchableOpacity 
+      style={styles.playlistCard}
+      onPress={() => handleOpenPlaylist(item)}
+      activeOpacity={0.7}
+    >
       <View style={styles.playlistIcon}>
         <Ionicons name="musical-notes" size={32} color={colors.primary} />
       </View>
@@ -47,12 +64,7 @@ export const PlaylistsScreen: React.FC = () => {
           {item.songs.length} {item.songs.length === 1 ? 'song' : 'songs'}
         </Text>
       </View>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => deletePlaylist(item.id)}
-      >
-        <Ionicons name="trash-outline" size={20} color={colors.error} />
-      </TouchableOpacity>
+      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
     </TouchableOpacity>
   );
   return (
@@ -231,12 +243,6 @@ const styles = StyleSheet.create({
   playlistCount: {
     ...typography.caption,
     color: colors.textMuted,
-  },
-  deleteButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,

@@ -1,6 +1,7 @@
 /**
  * Queue Store
  * Zustand store for managing playback queue with AsyncStorage persistence
+ * Supports auto-populating with suggestions from the API
  */
 
 import { create } from 'zustand';
@@ -17,9 +18,11 @@ interface QueueState {
   shuffle: boolean;
   repeat: RepeatMode;
   originalQueue: Song[]; // Store original order for shuffle
+  isLoadingSuggestions: boolean;
+  manuallyAddedIndices: number[]; // Track indices of manually added songs
 
   // Actions
-  addToQueue: (song: Song | Song[]) => void;
+  addToQueue: (song: Song | Song[], isManual?: boolean) => void;
   removeFromQueue: (index: number) => void;
   reorderQueue: (fromIndex: number, toIndex: number) => void;
   nextSong: () => Song | null;
@@ -29,6 +32,8 @@ interface QueueState {
   setRepeat: (mode: RepeatMode) => void;
   clearQueue: () => void;
   setQueue: (songs: Song[], startIndex?: number) => void;
+  playAndBuildQueue: (song: Song, contextSongs?: Song[]) => void;
+  autoPopulateFromSuggestions: (songId: string) => Promise<void>;
 }
 
 export const useQueueStore = create<QueueState>()(
@@ -40,14 +45,48 @@ export const useQueueStore = create<QueueState>()(
       shuffle: false,
       repeat: 'off',
       originalQueue: [],
+      isLoadingSuggestions: false,
+      manuallyAddedIndices: [],
 
       // Actions
-      addToQueue: (song) =>
+      addToQueue: (song, isManual = false) =>
         set((state) => {
           const songs = Array.isArray(song) ? song : [song];
-          const newQueue = [...state.queue, ...songs];
+          let newQueue = [...state.queue];
+          let insertIndex: number;
+          let newManualIndices = [...state.manuallyAddedIndices];
+
+          if (isManual) {
+            // Find where to insert manually added songs
+            if (newManualIndices.length === 0) {
+              // First manual addition: insert right after current song
+              insertIndex = state.currentIndex + 1;
+            } else {
+              // Subsequent manual additions: insert after the last manually added song
+              const lastManualIndex = Math.max(...newManualIndices);
+              insertIndex = lastManualIndex + 1;
+            }
+
+            // Insert songs at the calculated position
+            newQueue.splice(insertIndex, 0, ...songs);
+
+            // Update manual indices (shift existing indices if needed)
+            newManualIndices = newManualIndices.map(idx => 
+              idx >= insertIndex ? idx + songs.length : idx
+            );
+            
+            // Add new manual indices
+            for (let i = 0; i < songs.length; i++) {
+              newManualIndices.push(insertIndex + i);
+            }
+          } else {
+            // Auto-added songs: append to end
+            newQueue = [...state.queue, ...songs];
+          }
+
           return {
             queue: newQueue,
+            manuallyAddedIndices: newManualIndices,
             originalQueue: state.shuffle ? [...state.originalQueue, ...songs] : newQueue,
           };
         }),
@@ -62,9 +101,15 @@ export const useQueueStore = create<QueueState>()(
                 ? state.currentIndex - 1
                 : state.currentIndex;
 
+          // Update manual indices
+          const newManualIndices = state.manuallyAddedIndices
+            .filter(idx => idx !== index) // Remove the deleted index
+            .map(idx => idx > index ? idx - 1 : idx); // Shift indices after deletion
+
           return {
             queue: newQueue,
             currentIndex: newIndex,
+            manuallyAddedIndices: newManualIndices,
             originalQueue: state.shuffle
               ? state.originalQueue.filter((s) => s.id !== state.queue[index]?.id)
               : newQueue,
@@ -196,6 +241,7 @@ export const useQueueStore = create<QueueState>()(
           queue: [],
           currentIndex: -1,
           originalQueue: [],
+          manuallyAddedIndices: [],
         }),
 
       setQueue: (songs, startIndex = 0) =>
@@ -203,8 +249,75 @@ export const useQueueStore = create<QueueState>()(
           queue: songs,
           currentIndex: startIndex,
           originalQueue: songs,
+          manuallyAddedIndices: [],
           shuffle: false,
         }),
+
+      /**
+       * Play a song and build a queue from context.
+       * If contextSongs is provided (e.g. from a list, album, search results),
+       * sets the full list as the queue.
+       * If no context, sets just the played song and auto-populates suggestions.
+       */
+      playAndBuildQueue: (song, contextSongs) => {
+        if (contextSongs && contextSongs.length > 0) {
+          // Find the index of the song in the context
+          const index = contextSongs.findIndex((s) => s.id === song.id);
+          set({
+            queue: contextSongs,
+            currentIndex: index >= 0 ? index : 0,
+            originalQueue: contextSongs,
+            shuffle: false,
+          });
+        } else {
+          // Single song — set it as queue, then auto-populate
+          set({
+            queue: [song],
+            currentIndex: 0,
+            originalQueue: [song],
+            shuffle: false,
+          });
+
+          // Auto-populate suggestions in the background
+          get().autoPopulateFromSuggestions(song.id);
+        }
+      },
+
+      /**
+       * Fetch song suggestions from the API and append to queue.
+       * Deduplicates against existing queue songs.
+       */
+      autoPopulateFromSuggestions: async (songId) => {
+        const state = get();
+        if (state.isLoadingSuggestions) return;
+
+        set({ isLoadingSuggestions: true });
+
+        try {
+          // Dynamic import to avoid circular deps
+          const { getSongSuggestions } = await import('../services/api/songs');
+          const suggestions = await getSongSuggestions(songId, 15);
+
+          if (suggestions && suggestions.length > 0) {
+            const currentState = get();
+            const existingIds = new Set(currentState.queue.map((s) => s.id));
+            const newSongs = suggestions.filter((s) => !existingIds.has(s.id));
+
+            if (newSongs.length > 0) {
+              const updatedQueue = [...currentState.queue, ...newSongs];
+              set({
+                queue: updatedQueue,
+                originalQueue: currentState.shuffle ? currentState.originalQueue : updatedQueue,
+              });
+              console.log(`[QueueStore] Auto-populated ${newSongs.length} suggestions`);
+            }
+          }
+        } catch (error) {
+          console.warn('[QueueStore] Failed to fetch suggestions:', error);
+        } finally {
+          set({ isLoadingSuggestions: false });
+        }
+      },
     }),
     {
       name: 'queue-storage',
@@ -216,6 +329,7 @@ export const useQueueStore = create<QueueState>()(
         shuffle: state.shuffle,
         repeat: state.repeat,
         originalQueue: state.originalQueue,
+        manuallyAddedIndices: state.manuallyAddedIndices,
       }),
     }
   )

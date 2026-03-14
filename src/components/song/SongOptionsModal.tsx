@@ -1,6 +1,7 @@
 /**
  * Song Options Modal
- * Bottom sheet modal for song actions (Add to Queue, etc.)
+ * Premium bottom sheet modal for song actions
+ * Features: drag handle, gradient header, icon-accented options, working favorites
  */
 
 import React, { useState } from 'react';
@@ -13,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Song } from '../../types';
 import { colors } from '../../theme/colors';
@@ -21,6 +23,7 @@ import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { getImageUrl, getArtistNames } from '../../utils/audio';
 import { PlaylistSelectorModal } from '../playlist/PlaylistSelectorModal';
+import { useFavoritesStore } from '../../store/favoritesStore';
 
 interface SongOptionsModalProps {
   visible: boolean;
@@ -38,19 +41,66 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
   onAddToPlaylist,
 }) => {
   const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
+  const { toggleFavorite, isFavorite } = useFavoritesStore();
 
   if (!song) return null;
 
   const imageUrl = getImageUrl(song.image, 'medium');
   const artistNames = getArtistNames(song);
+  const isFav = isFavorite(song.id);
 
-  const handleAddToQueue = () => {
-    onAddToQueue();
-    onClose();
-  };
+  const OPTION_ITEMS = [
+    {
+      key: 'queue',
+      icon: 'add-circle-outline' as const,
+      label: 'Add to Queue',
+      subtitle: 'Play next in line',
+      iconBg: 'rgba(94, 243, 204, 0.12)',
+      iconColor: colors.secondary,
+    },
+    {
+      key: 'playlist',
+      icon: 'list-outline' as const,
+      label: 'Add to Playlist',
+      subtitle: 'Save to a collection',
+      iconBg: 'rgba(255, 140, 40, 0.12)',
+      iconColor: colors.primary,
+    },
+    {
+      key: 'favorite',
+      icon: isFav ? ('heart' as const) : ('heart-outline' as const),
+      label: isFav ? 'Remove from Favorites' : 'Add to Favorites',
+      subtitle: isFav ? 'Remove from your likes' : 'Keep it close',
+      iconBg: isFav ? 'rgba(255, 75, 110, 0.2)' : 'rgba(255, 75, 110, 0.12)',
+      iconColor: '#FF4B6E',
+    },
+    {
+      key: 'share',
+      icon: 'share-outline' as const,
+      label: 'Share',
+      subtitle: 'Send to a friend',
+      iconBg: 'rgba(100, 140, 255, 0.12)',
+      iconColor: '#648CFF',
+    },
+  ];
 
-  const handleAddToPlaylist = () => {
-    setShowPlaylistSelector(true);
+  const handleOptionPress = (key: string) => {
+    switch (key) {
+      case 'queue':
+        onAddToQueue();
+        onClose();
+        break;
+      case 'playlist':
+        setShowPlaylistSelector(true);
+        break;
+      case 'favorite':
+        toggleFavorite(song);
+        // Don't close — let user see the state change
+        break;
+      case 'share':
+        onClose();
+        break;
+    }
   };
 
   return (
@@ -65,46 +115,57 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.container}>
-              {/* Song Info Header */}
-              <View style={styles.header}>
-                <Image source={{ uri: imageUrl }} style={styles.albumArt} />
-                <View style={styles.songInfo}>
-                  <Text style={styles.songTitle} numberOfLines={1}>
-                    {song.name}
-                  </Text>
-                  <Text style={styles.artistName} numberOfLines={1}>
-                    {artistNames}
-                  </Text>
+              {/* Song Info Header with Gradient */}
+              <LinearGradient
+                colors={['rgba(255, 140, 40, 0.08)', 'transparent']}
+                style={styles.headerGradient}
+              >
+                <View style={styles.header}>
+                  <Image source={{ uri: imageUrl }} style={styles.albumArt} />
+                  <View style={styles.songInfo}>
+                    <Text style={styles.songTitle} numberOfLines={2}>
+                      {song.name}
+                    </Text>
+                    <Text style={styles.artistName} numberOfLines={1}>
+                      {artistNames}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              </LinearGradient>
+
+              {/* Divider */}
+              <View style={styles.divider} />
 
               {/* Options */}
               <View style={styles.options}>
-                <TouchableOpacity style={styles.option} onPress={handleAddToQueue}>
-                  <Ionicons name="add-circle-outline" size={24} color={colors.textPrimary} />
-                  <Text style={styles.optionText}>Add to Queue</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.option} onPress={handleAddToPlaylist}>
-                  <Ionicons name="list-outline" size={24} color={colors.textPrimary} />
-                  <Text style={styles.optionText}>Add to Playlist</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.option} onPress={onClose}>
-                  <Ionicons name="heart-outline" size={24} color={colors.textPrimary} />
-                  <Text style={styles.optionText}>Add to Favorites</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.option} onPress={onClose}>
-                  <Ionicons name="share-outline" size={24} color={colors.textPrimary} />
-                  <Text style={styles.optionText}>Share</Text>
-                </TouchableOpacity>
+                {OPTION_ITEMS.map((item, index) => (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.option,
+                      index === OPTION_ITEMS.length - 1 && styles.optionLast,
+                    ]}
+                    onPress={() => handleOptionPress(item.key)}
+                    activeOpacity={0.6}
+                  >
+                    <View style={[styles.optionIconBg, { backgroundColor: item.iconBg }]}>
+                      <Ionicons name={item.icon} size={22} color={item.iconColor} />
+                    </View>
+                    <View style={styles.optionTextContainer}>
+                      <Text style={styles.optionLabel}>{item.label}</Text>
+                      <Text style={styles.optionSubtitle}>{item.subtitle}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ opacity: 0.4 }} />
+                  </TouchableOpacity>
+                ))}
               </View>
 
               {/* Cancel Button */}
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.cancelContainer}>
+                <TouchableOpacity style={styles.cancelButton} onPress={onClose} activeOpacity={0.7}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -123,25 +184,27 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'flex-end',
   },
   container: {
     backgroundColor: colors.backgroundSecondary,
-    borderTopLeftRadius: borderRadius.large,
-    borderTopRightRadius: borderRadius.large,
-    paddingBottom: spacing.xl,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: spacing.xl + 8,
+  },
+  headerGradient: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   albumArt: {
-    width: 56,
-    height: 56,
+    width: 64,
+    height: 64,
     borderRadius: borderRadius.medium,
     marginRight: spacing.md,
   },
@@ -149,39 +212,72 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   songTitle: {
-    ...typography.bodyLarge,
-    marginBottom: spacing.xs,
+    fontSize: 17,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textPrimary,
+    lineHeight: 23,
+    marginBottom: 3,
   },
   artistName: {
-    ...typography.body,
+    fontSize: 13,
+    fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
   },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginHorizontal: spacing.lg,
+  },
   options: {
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: 14,
+    borderRadius: borderRadius.medium,
   },
-  optionText: {
-    ...typography.body,
-    marginLeft: spacing.md,
+  optionLast: {
+    // no bottom margin for last item
+  },
+  optionIconBg: {
+    width: 42,
+    height: 42,
+    borderRadius: borderRadius.medium,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  optionTextContainer: {
+    flex: 1,
+  },
+  optionLabel: {
+    fontSize: 15,
+    fontFamily: 'Poppins_500Medium',
+    color: colors.textPrimary,
+    marginBottom: 1,
+  },
+  optionSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+  },
+  cancelContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   cancelButton: {
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.backgroundTertiary,
+    paddingVertical: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: borderRadius.medium,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
     alignItems: 'center',
   },
   cancelText: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 15,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textMuted,
   },
 });

@@ -29,7 +29,7 @@ import { colors, spacing, borderRadius, typography } from '../theme';
 import { SongItem } from '../components/song';
 import { searchSongs } from '../services/api';
 import { getImageUrl, formatDuration, getArtistNames } from '../utils/audio';
-import { usePlayerStore } from '../store';
+import { usePlayerStore, useQueueStore } from '../store';
 
 type Props = StackScreenProps<RootStackParamList, 'Artist'>;
 
@@ -40,6 +40,7 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
   const [artistImage, setArtistImage] = useState<string | undefined>();
 
   const { currentSong, play } = usePlayerStore();
+  const { playAndBuildQueue } = useQueueStore();
 
   useEffect(() => {
     loadArtistData();
@@ -62,6 +63,7 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleSongPress = (song: Song) => {
+    playAndBuildQueue(song, songs);
     play(song);
     navigation.navigate('Player', { song });
   };

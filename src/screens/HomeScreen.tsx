@@ -88,7 +88,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [showSongOptions, setShowSongOptions] = useState(false);
 
   const { currentSong, play } = usePlayerStore();
-  const { addToQueue } = useQueueStore();
+  const { addToQueue, playAndBuildQueue } = useQueueStore();
   const {
     getSuggestedSongs: getCachedSuggestedSongs,
     getSongs: getCachedSongs,
@@ -230,7 +230,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setRefreshing(false);
   };
 
-  const handleSongPress = (song: Song) => {
+  const handleSongPress = (song: Song, contextList?: Song[]) => {
+    playAndBuildQueue(song, contextList);
     play(song);
     navigation.navigate('Player', { song });
   };
@@ -254,7 +255,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleAddToQueue = () => {
     if (selectedSong) {
-      addToQueue(selectedSong);
+      addToQueue(selectedSong, true); // Add as manual
       console.log('Added to queue:', selectedSong.name);
     }
   };
@@ -346,7 +347,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <TouchableOpacity
                   key={song.id}
                   style={styles.suggestedCard}
-                  onPress={() => handleSongPress(song)}
+                  onPress={() => handleSongPress(song, recentlyPlayed)}
                   activeOpacity={0.7}
                 >
                   {imageUri ? (
@@ -388,7 +389,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <TouchableOpacity
                   key={`artist-${song.id}-${index}`}
                   style={styles.suggestedArtistCard}
-                  onPress={() => handleSongPress(song)}
+                  onPress={() => handleSongPress(song, suggestedSongs)}
                   activeOpacity={0.7}
                 >
                   {imageUri ? (
@@ -426,7 +427,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <TouchableOpacity
                   key={`most-${song.id}`}
                   style={styles.suggestedCard}
-                  onPress={() => handleSongPress(song)}
+                  onPress={() => handleSongPress(song, mostPlayed)}
                   activeOpacity={0.7}
                 >
                   {imageUri ? (
@@ -480,7 +481,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           artist={getArtistNames(item)}
           duration={formatDuration(item.duration)}
           albumArtUri={getImageUrl(item.image)}
-          onPress={() => handleSongPress(item)}
+          onPress={() => handleSongPress(item, songs)}
           onMorePress={() => handleSongMorePress(item)}
           isPlaying={currentSong?.id === item.id}
           style={styles.listItem}

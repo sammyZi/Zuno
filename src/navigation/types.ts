@@ -33,6 +33,9 @@ export type RootStackParamList = {
   Album: {
     albumId: string;
   };
+  PlaylistDetail: {
+    playlistId: string;
+  };
   ComponentShowcase: undefined;
 };
 
