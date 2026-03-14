@@ -5,7 +5,7 @@
  * Progress bar on top
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -23,9 +23,11 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
+import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayerStore } from '../../store/playerStore';
 import { useQueueStore } from '../../store/queueStore';
+import { AudioService } from '../../services/audio';
 import { colors, spacing, borderRadius } from '../../theme';
 import { navigate } from '../../navigation/navigationRef';
 
@@ -39,6 +41,8 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
   const slideY = useSharedValue(120);
   const playBtnScale = useSharedValue(1);
   const progressWidth = useSharedValue(0);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekValue, setSeekValue] = useState(0);
 
   const { currentSong, isPlaying, position, duration, play, togglePlayPause } = usePlayerStore();
   const { nextSong } = useQueueStore();

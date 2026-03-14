@@ -11,13 +11,13 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import { borderRadius } from '../theme/borderRadius';
+import { ConfirmModal } from '../components/common';
 import { useSettingsStore, AudioQuality, DownloadPreference } from '../store';
 import { DownloadService } from '../services/storage';
 
@@ -36,6 +36,7 @@ export const SettingsScreen: React.FC = () => {
   } = useSettingsStore();
 
   const [isClearing, setIsClearing] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -65,30 +66,21 @@ export const SettingsScreen: React.FC = () => {
 
   // Handle clear cache
   const handleClearCache = () => {
-    Alert.alert(
-      'Clear Cache',
-      'This will delete all downloaded songs. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            setIsClearing(true);
-            try {
-              await DownloadService.clearAllDownloads();
-              await clearCache();
-              await updateStorage();
-              Alert.alert('Success', 'Cache cleared successfully');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to clear cache');
-            } finally {
-              setIsClearing(false);
-            }
-          },
-        },
-      ]
-    );
+    setShowClearModal(true);
+  };
+
+  const confirmClearCache = async () => {
+    setShowClearModal(false);
+    setIsClearing(true);
+    try {
+      await DownloadService.clearAllDownloads();
+      await clearCache();
+      await updateStorage();
+    } catch (error) {
+      console.error('Failed to clear cache:', error);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   // Format bytes to readable size
@@ -350,6 +342,18 @@ export const SettingsScreen: React.FC = () => {
         {/* Bottom Padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Clear Cache Confirmation Modal */}
+      <ConfirmModal
+        visible={showClearModal}
+        title="Clear Cache"
+        message="This will delete all downloaded songs. Are you sure?"
+        confirmText="Clear"
+        cancelText="Cancel"
+        confirmColor={colors.error}
+        onConfirm={confirmClearCache}
+        onCancel={() => setShowClearModal(false)}
+      />
     </View>
   );
 };

@@ -73,19 +73,37 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
         onPlaybackEnd: async () => {
           console.log('[PlayerStore] Playback ended');
-          set({ isPlaying: false });
+          set({ isPlaying: false, position: 0 });
           
           // Get next song from queue based on repeat mode
           const { useQueueStore } = await import('./queueStore');
-          const nextSong = useQueueStore.getState().nextSong();
+          const queueState = useQueueStore.getState();
+          const nextSong = queueState.nextSong();
           
           if (nextSong) {
             console.log('[PlayerStore] Auto-playing next song:', nextSong.name);
-            // Play next song
+            // Small delay to prevent glitching
+            await new Promise(resolve => setTimeout(resolve, 100));
             await get().play(nextSong);
           } else {
-            console.log('[PlayerStore] No next song, stopping playback');
-            set({ position: 0 });
+            // Queue ended - auto-populate with similar songs
+            console.log('[PlayerStore] Queue ended, fetching similar songs...');
+            const currentSong = get().currentSong;
+            
+            if (currentSong) {
+              // Auto-populate suggestions
+              await queueState.autoPopulateFromSuggestions(currentSong.id);
+              
+              // Try to get next song again after populating
+              const newNextSong = queueState.nextSong();
+              if (newNextSong) {
+                console.log('[PlayerStore] Auto-playing suggested song:', newNextSong.name);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                await get().play(newNextSong);
+              } else {
+                console.log('[PlayerStore] No suggestions available, stopping playback');
+              }
+            }
           }
         },
 

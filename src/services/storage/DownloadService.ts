@@ -13,6 +13,7 @@ const DOWNLOADS_INDEX_KEY = '@downloads_index';
 
 export interface DownloadProgress {
   songId: string;
+  songName?: string;
   progress: number; // 0-100
   totalBytes: number;
   downloadedBytes: number;
@@ -30,7 +31,7 @@ type CompletionCallback = (songId: string, success: boolean, error?: string) => 
 
 class DownloadServiceClass {
   private downloadIndex: Map<string, DownloadedSong> = new Map();
-  private activeDownloads: Map<string, AbortController> = new Map();
+  private activeDownloads: Map<string, boolean> = new Map();
   private progressCallbacks: Map<string, ProgressCallback> = new Map();
   private completionCallbacks: Map<string, CompletionCallback> = new Map();
   private isInitialized = false;
@@ -49,7 +50,7 @@ class DownloadServiceClass {
       this.downloadsDir = new Directory(Paths.document, DOWNLOADS_DIR_NAME);
       
       if (!this.downloadsDir.exists) {
-        await this.downloadsDir.create();
+        this.downloadsDir.create();
         console.log('[DownloadService] Created downloads directory');
       }
 
@@ -72,7 +73,6 @@ class DownloadServiceClass {
       const indexJson = await AsyncStorage.getItem(DOWNLOADS_INDEX_KEY);
       if (indexJson) {
         const indexArray: DownloadedSong[] = JSON.parse(indexJson);
-        this.downloadIndex = new Map(indexArray.map(item => [item.songId, item]));
         
         // Verify files still exist
         const validDownloads: DownloadedSong[] = [];
@@ -143,11 +143,13 @@ class DownloadServiceClass {
         throw new Error('No audio URL available for this song');
       }
 
-      // Create local file path
-      const fileName = `${song.id}.mp3`;
+      // Create local file path - use .m4a extension since API returns MP4 audio
+      const fileName = `${song.id}.m4a`;
       const file = new File(this.downloadsDir!, fileName);
 
       console.log('[DownloadService] Starting download:', song.name);
+      console.log('[DownloadService] From URL:', audioUrl);
+      console.log('[DownloadService] To file:', file.uri);
 
       // Store callbacks
       if (onProgress) {
@@ -157,66 +159,58 @@ class DownloadServiceClass {
         this.completionCallbacks.set(song.id, onComplete);
       }
 
-      // Create abort controller for cancellation
-      const abortController = new AbortController();
-      this.activeDownloads.set(song.id, abortController);
+      // Mark as downloading
+      this.activeDownloads.set(song.id, true);
 
       // Report initial progress
       onProgress?.({
         songId: song.id,
+        songName: song.name,
         progress: 0,
         totalBytes: 0,
         downloadedBytes: 0,
       });
 
-      // Download file using fetch with proper React Native handling
-      const response = await fetch(audioUrl, {
-        signal: abortController.signal,
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.statusText}`);
+      // Download file using the new API
+      const downloadedFile = await File.downloadFileAsync(
+        audioUrl,
+        file,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36',
+            'Accept': '*/*',
+          },
+        }
+      );
+
+      // Verify file was downloaded
+      if (!downloadedFile.exists) {
+        throw new Error('Downloaded file does not exist');
       }
 
-      // Get the response as text (base64) since React Native doesn't support arrayBuffer on blob
-      const blob = await response.blob();
-      
-      // Use FileReader to convert blob to base64 in React Native
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          // Remove data URL prefix if present
-          const base64 = result.includes(',') ? result.split(',')[1] : result;
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-      
-      // Write base64 data to file
-      file.write(base64Data);
+      const fileSize = downloadedFile.size || 0;
+      console.log('[DownloadService] Download complete:', song.name);
+      console.log('[DownloadService] File size:', fileSize, 'bytes');
 
       // Report completion progress
       onProgress?.({
         songId: song.id,
+        songName: song.name,
         progress: 100,
-        totalBytes: base64Data.length,
-        downloadedBytes: base64Data.length,
+        totalBytes: fileSize,
+        downloadedBytes: fileSize,
       });
 
       // Download successful
       const downloadedSong: DownloadedSong = {
         songId: song.id,
-        localUri: file.uri,
+        localUri: downloadedFile.uri,
         downloadedAt: Date.now(),
         song,
       };
 
       this.downloadIndex.set(song.id, downloadedSong);
       await this.saveDownloadIndex();
-
-      console.log('[DownloadService] Download complete:', song.name);
       
       const callback = this.completionCallbacks.get(song.id);
       callback?.(song.id, true);
@@ -238,10 +232,8 @@ class DownloadServiceClass {
    * Cancel an active download
    */
   async cancelDownload(songId: string): Promise<void> {
-    const abortController = this.activeDownloads.get(songId);
-    if (abortController) {
+    if (this.activeDownloads.has(songId)) {
       try {
-        abortController.abort();
         this.activeDownloads.delete(songId);
         this.progressCallbacks.delete(songId);
         this.completionCallbacks.delete(songId);
@@ -265,7 +257,7 @@ class DownloadServiceClass {
       // Delete file
       const file = new File(download.localUri);
       if (file.exists) {
-        await file.delete();
+        file.delete();
       }
 
       // Remove from index
@@ -327,8 +319,8 @@ class DownloadServiceClass {
 
       // Delete all files
       if (this.downloadsDir && this.downloadsDir.exists) {
-        await this.downloadsDir.delete();
-        await this.downloadsDir.create();
+        this.downloadsDir.delete();
+        this.downloadsDir.create();
       }
 
       // Clear index
@@ -352,8 +344,7 @@ class DownloadServiceClass {
       try {
         const file = new File(download.localUri);
         if (file.exists) {
-          const info = await file.info();
-          totalSize += info.size || 0;
+          totalSize += file.size || 0;
         }
       } catch (error) {
         console.error('[DownloadService] Error getting file size:', error);

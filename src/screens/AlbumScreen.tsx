@@ -148,8 +148,8 @@ export const AlbumScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
 
         {/* Songs List */}
-        {songs.map((song) => (
-          <View key={song.id} style={styles.songItemContainer}>
+        {songs.map((song, index) => (
+          <View key={`album-song-${song.id}-${index}`} style={styles.songItemContainer}>
             <SongItem
               song={song}
               title={song.name}

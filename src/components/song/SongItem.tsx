@@ -30,9 +30,11 @@ interface SongItemProps {
   duration?: string;
   albumArtUri?: string;
   onPress: () => void;
-  onMorePress?: () => void;
+  onLongPress?: () => void;
+  onMorePress?: (song: Song) => void;
   isPlaying?: boolean;
   style?: ViewStyle;
+  showMoreButton?: boolean;
 }
 
 export const SongItem: React.FC<SongItemProps> = ({
@@ -42,19 +44,28 @@ export const SongItem: React.FC<SongItemProps> = ({
   duration,
   albumArtUri,
   onPress,
+  onLongPress,
   onMorePress,
   isPlaying = false,
   style,
+  showMoreButton = true,
 }) => {
   const { isFavorite, toggleFavorite } = useFavoritesStore();
   const { isDownloaded } = useDownloadStore();
   const isFav = song ? isFavorite(song.id) : false;
   const isOffline = song ? isDownloaded(song.id) : false;
 
+  const handleMorePress = () => {
+    if (song && onMorePress) {
+      onMorePress(song);
+    }
+  };
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
       onPress={onPress}
+      onLongPress={onLongPress}
       activeOpacity={0.6}
     >
       {/* Square album art */}
@@ -113,9 +124,9 @@ export const SongItem: React.FC<SongItemProps> = ({
       </TouchableOpacity>
 
       {/* 3-dot menu */}
-      {onMorePress && (
+      {showMoreButton && onMorePress && song && (
         <TouchableOpacity
-          onPress={onMorePress}
+          onPress={handleMorePress}
           style={styles.moreButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >

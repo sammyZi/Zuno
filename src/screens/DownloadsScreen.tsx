@@ -1,6 +1,6 @@
 /**
  * Downloads Screen
- * Shows all downloaded songs for offline playback
+ * Shows all downloaded songs for offline playback with multi-select delete
  */
 
 import React, { useEffect, useState } from 'react';
@@ -12,7 +12,6 @@ import {
   FlatList,
   TouchableOpacity,
   Platform,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { CompositeScreenProps } from '@react-navigation/native';
@@ -21,7 +20,7 @@ import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { colors, spacing, borderRadius, typography } from '../theme';
 import { SongItem } from '../components/song';
-import { LoadingSpinner } from '../components/common';
+import { LoadingSpinner, ConfirmModal } from '../components/common';
 import { DownloadService } from '../services/storage';
 import { usePlayerStore, useQueueStore, useDownloadStore } from '../store';
 import { getImageUrl, formatDuration, getArtistNames } from '../utils/audio';
@@ -36,6 +35,9 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
   const [downloadedSongs, setDownloadedSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOption, setSortOption] = useState('Recent');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedSongs, setSelectedSongs] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { currentSong, play } = usePlayerStore();
   const { playAndBuildQueue } = useQueueStore();
@@ -44,6 +46,15 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     loadDownloadedSongs();
   }, [downloadedSet]);
+
+  useEffect(() => {
+    // Exit selection mode when navigating away
+    const unsubscribe = navigation.addListener('blur', () => {
+      setSelectionMode(false);
+      setSelectedSongs(new Set());
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const loadDownloadedSongs = async () => {
     try {
@@ -64,27 +75,69 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSongPress = (song: Song) => {
-    playAndBuildQueue(song, downloadedSongs);
-    play(song);
-    navigation.navigate('Player', { song });
+    if (selectionMode) {
+      toggleSongSelection(song.id);
+    } else {
+      playAndBuildQueue(song, downloadedSongs);
+      play(song);
+      navigation.navigate('Player', { song });
+    }
+  };
+
+  const handleSongLongPress = (song: Song) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      setSelectedSongs(new Set([song.id]));
+    }
+  };
+
+  const toggleSongSelection = (songId: string) => {
+    setSelectedSongs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(songId)) {
+        newSet.delete(songId);
+      } else {
+        newSet.add(songId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedSongs(new Set(downloadedSongs.map(s => s.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedSongs(new Set());
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedSongs(new Set());
+  };
+
+  const handleDeleteSelected = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteModal(false);
+    
+    // Delete all selected songs
+    for (const songId of selectedSongs) {
+      await deleteDownload(songId);
+    }
+    
+    // Reload downloads
+    await loadDownloadedSongs();
+    
+    // Exit selection mode
+    exitSelectionMode();
   };
 
   const handleDeleteDownload = (song: Song) => {
-    Alert.alert(
-      'Delete Download',
-      `Remove "${song.name}" from downloads?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteDownload(song.id);
-            await loadDownloadedSongs();
-          },
-        },
-      ]
-    );
+    setSelectedSongs(new Set([song.id]));
+    setShowDeleteModal(true);
   };
 
   const handleSort = () => {
@@ -124,17 +177,38 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderHeader = () => (
     <View style={styles.listHeader}>
-      <Text style={styles.listHeaderCount}>
-        {downloadedSongs.length} {downloadedSongs.length === 1 ? 'song' : 'songs'}
-      </Text>
-      <TouchableOpacity
-        style={styles.sortButton}
-        onPress={handleSort}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.sortButtonText}>{sortOption}</Text>
-        <Ionicons name="swap-vertical" size={16} color={colors.primary} />
-      </TouchableOpacity>
+      {selectionMode ? (
+        <>
+          <Text style={styles.listHeaderCount}>
+            {selectedSongs.size} selected
+          </Text>
+          <View style={styles.selectionActions}>
+            {selectedSongs.size === downloadedSongs.length ? (
+              <TouchableOpacity onPress={deselectAll} activeOpacity={0.7}>
+                <Text style={styles.actionText}>Deselect All</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={selectAll} activeOpacity={0.7}>
+                <Text style={styles.actionText}>Select All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.listHeaderCount}>
+            {downloadedSongs.length} {downloadedSongs.length === 1 ? 'song' : 'songs'}
+          </Text>
+          <TouchableOpacity
+            style={styles.sortButton}
+            onPress={handleSort}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.sortButtonText}>{sortOption}</Text>
+            <Ionicons name="swap-vertical" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 
@@ -154,9 +228,32 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.backgroundPrimary} />
 
-      {/* Header - Matching Home/Favorites style */}
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Downloads</Text>
+        {selectionMode ? (
+          <View style={styles.selectionHeader}>
+            <TouchableOpacity
+              onPress={exitSelectionMode}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close" size={28} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Select Songs</Text>
+            <TouchableOpacity
+              onPress={handleDeleteSelected}
+              disabled={selectedSongs.size === 0}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons 
+                name="trash-outline" 
+                size={24} 
+                color={selectedSongs.size > 0 ? colors.error : colors.textMuted} 
+              />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Text style={styles.headerTitle}>Downloads</Text>
+        )}
       </View>
 
       {/* Content */}
@@ -169,31 +266,71 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
           data={downloadedSongs}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={renderHeader}
-          renderItem={({ item }) => (
-            <View style={styles.songItemWrapper}>
-              <SongItem
-                song={item}
-                title={item.name}
-                artist={getArtistNames(item)}
-                duration={formatDuration(item.duration)}
-                albumArtUri={getImageUrl(item.image)}
-                onPress={() => handleSongPress(item)}
-                isPlaying={currentSong?.id === item.id}
-                style={styles.songItem}
-              />
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteDownload(item)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="trash-outline" size={18} color={colors.error} />
-              </TouchableOpacity>
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isSelected = selectedSongs.has(item.id);
+            return (
+              <View style={styles.songItemWrapper}>
+                {selectionMode && (
+                  <TouchableOpacity
+                    style={styles.checkbox}
+                    onPress={() => toggleSongSelection(item.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[
+                      styles.checkboxInner,
+                      isSelected && styles.checkboxSelected
+                    ]}>
+                      {isSelected && (
+                        <Ionicons name="checkmark" size={16} color={colors.textPrimary} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )}
+                <View style={styles.songItemContainer}>
+                  <SongItem
+                    song={item}
+                    title={item.name}
+                    artist={getArtistNames(item)}
+                    duration={formatDuration(item.duration)}
+                    albumArtUri={getImageUrl(item.image)}
+                    onPress={() => handleSongPress(item)}
+                    onLongPress={() => handleSongLongPress(item)}
+                    isPlaying={currentSong?.id === item.id}
+                    style={styles.songItem}
+                  />
+                  {!selectionMode && (
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteDownload(item)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.error} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            );
+          }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        visible={showDeleteModal}
+        title="Delete Downloads"
+        message={
+          selectedSongs.size === 1
+            ? 'Remove this song from downloads?'
+            : `Remove ${selectedSongs.size} songs from downloads?`
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmColor={colors.error}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </View>
   );
 };
@@ -213,16 +350,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_700Bold',
     color: colors.textPrimary,
   },
-  appNameContainer: {
+  selectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-  },
-  appName: {
-    color: colors.textPrimary,
-    fontSize: 24,
-    fontFamily: 'Poppins_700Bold',
-    letterSpacing: 0.5,
+    justifyContent: 'space-between',
   },
   listHeader: {
     flexDirection: 'row',
@@ -246,6 +377,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_500Medium',
     color: colors.primary,
   },
+  selectionActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  actionText: {
+    fontSize: 14,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.primary,
+  },
   listContent: {
     paddingHorizontal: spacing.md,
     paddingBottom: 120,
@@ -254,8 +394,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  songItemContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   songItem: {
     flex: 1,
+  },
+  checkbox: {
+    marginRight: spacing.sm,
+    padding: spacing.xs,
+  },
+  checkboxInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   deleteButton: {
     padding: spacing.sm,

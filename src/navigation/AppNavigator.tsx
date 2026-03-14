@@ -16,6 +16,7 @@ import {
   SearchScreen,
   ArtistScreen,
   AlbumScreen,
+  RecentlyPlayedScreen,
 } from '../screens';
 import { ComponentShowcaseScreen } from '../screens/ComponentShowcaseScreen';
 import { PlaylistDetailScreen } from '../screens/PlaylistDetailScreen';
@@ -139,6 +140,14 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen
             name="Album"
             component={AlbumScreen}
+            options={{
+              headerShown: false,
+              cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+            }}
+          />
+          <Stack.Screen
+            name="RecentlyPlayed"
+            component={RecentlyPlayedScreen}
             options={{
               headerShown: false,
               cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,

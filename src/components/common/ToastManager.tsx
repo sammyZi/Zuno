@@ -18,51 +18,70 @@ interface ToastData {
 export const ToastManager: React.FC = () => {
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const { downloadProgress } = useDownloadStore();
+  const previousProgressRef = React.useRef<Map<string, number>>(new Map());
 
   // Monitor download progress
   useEffect(() => {
     const activeDownloads = Array.from(downloadProgress.entries());
+    const currentIds = new Set(activeDownloads.map(([id]) => id));
     
     // Update or create toasts for active downloads
+    const updatedToasts = [...toasts];
+    let hasChanges = false;
+
     activeDownloads.forEach(([songId, progress]) => {
-      const existingToast = toasts.find(t => t.id === songId);
+      const existingIndex = updatedToasts.findIndex(t => t.id === songId);
+      const previousProgress = previousProgressRef.current.get(songId) || 0;
       
-      if (existingToast) {
+      // Only update if progress actually changed (prevent glitches)
+      if (Math.abs(progress.progress - previousProgress) < 0.5 && existingIndex !== -1) {
+        return; // Skip minor updates
+      }
+
+      previousProgressRef.current.set(songId, progress.progress);
+      
+      if (existingIndex !== -1) {
         // Update existing toast
-        setToasts(prev =>
-          prev.map(t =>
-            t.id === songId
-              ? { ...t, progress: progress.progress, visible: true }
-              : t
-          )
-        );
+        updatedToasts[existingIndex] = {
+          ...updatedToasts[existingIndex],
+          progress: progress.progress,
+          visible: true,
+          message: progress.progress === 100 ? 'Download complete!' : `Downloading ${progress.songName || 'song'}...`,
+          type: progress.progress === 100 ? 'success' : 'download',
+        };
+        hasChanges = true;
       } else {
         // Create new toast
-        const newToast: ToastData = {
+        updatedToasts.push({
           id: songId,
-          message: 'Downloading song...',
+          message: `Downloading ${progress.songName || 'song'}...`,
           type: 'download',
           progress: progress.progress,
           visible: true,
-        };
-        setToasts(prev => [...prev, newToast]);
+        });
+        hasChanges = true;
       }
     });
 
-    // Remove toasts for completed downloads
-    setToasts(prev =>
-      prev.filter(t => {
-        const isActive = downloadProgress.has(t.id);
-        if (!isActive && t.progress === 100) {
-          // Show completion message briefly
-          setTimeout(() => {
-            setToasts(current => current.filter(ct => ct.id !== t.id));
-          }, 2000);
-          return true;
-        }
-        return isActive;
-      })
-    );
+    // Mark completed downloads for removal
+    updatedToasts.forEach((toast, index) => {
+      if (!currentIds.has(toast.id) && toast.progress === 100) {
+        // Auto-remove completed toasts after 2 seconds
+        setTimeout(() => {
+          setToasts(prev => prev.filter(t => t.id !== toast.id));
+          previousProgressRef.current.delete(toast.id);
+        }, 2000);
+      } else if (!currentIds.has(toast.id) && toast.progress !== 100) {
+        // Remove cancelled/failed downloads immediately
+        updatedToasts.splice(index, 1);
+        previousProgressRef.current.delete(toast.id);
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      setToasts(updatedToasts);
+    }
   }, [downloadProgress]);
 
   const handleCloseToast = (id: string) => {
@@ -78,15 +97,12 @@ export const ToastManager: React.FC = () => {
         <Toast
           key={toast.id}
           visible={toast.visible}
-          message={
-            toast.progress === 100
-              ? 'Download complete!'
-              : toast.message
-          }
-          type={toast.progress === 100 ? 'success' : toast.type}
+          message={toast.message}
+          type={toast.type}
           progress={toast.progress}
           onClose={() => handleCloseToast(toast.id)}
-          duration={toast.progress === 100 ? 2000 : 0}
+          duration={toast.type === 'success' ? 2000 : 0}
+          index={index}
         />
       ))}
     </>

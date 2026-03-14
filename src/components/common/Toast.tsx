@@ -15,8 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TOAST_WIDTH = SCREEN_WIDTH - spacing.md * 2;
+const TOAST_WIDTH = 280;
 
 export type ToastType = 'success' | 'error' | 'info' | 'download';
 
@@ -27,6 +26,7 @@ interface ToastProps {
   progress?: number; // 0-100 for download progress
   onClose?: () => void;
   duration?: number; // Auto-hide duration in ms (0 = no auto-hide)
+  index?: number; // For stacking multiple toasts
 }
 
 export const Toast: React.FC<ToastProps> = ({
@@ -36,22 +36,24 @@ export const Toast: React.FC<ToastProps> = ({
   progress,
   onClose,
   duration = 3000,
+  index = 0,
 }) => {
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const translateX = useRef(new Animated.Value(300)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      // Show toast
+      // Show toast with slide-in from right
       Animated.parallel([
-        Animated.timing(translateY, {
+        Animated.spring(translateX, {
           toValue: 0,
-          duration: 300,
+          tension: 65,
+          friction: 10,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 300,
+          duration: 200,
           useNativeDriver: true,
         }),
       ]).start();
@@ -70,14 +72,14 @@ export const Toast: React.FC<ToastProps> = ({
 
   const hideToast = () => {
     Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: -100,
-        duration: 300,
+      Animated.timing(translateX, {
+        toValue: 300,
+        duration: 250,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 300,
+        duration: 250,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -88,13 +90,13 @@ export const Toast: React.FC<ToastProps> = ({
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <Ionicons name="checkmark-circle" size={24} color={colors.success} />;
+        return <Ionicons name="checkmark-circle" size={20} color={colors.success} />;
       case 'error':
-        return <Ionicons name="close-circle" size={24} color={colors.error} />;
+        return <Ionicons name="close-circle" size={20} color={colors.error} />;
       case 'download':
-        return <Ionicons name="download" size={24} color={colors.secondary} />;
+        return <Ionicons name="download-outline" size={20} color={colors.secondary} />;
       default:
-        return <Ionicons name="information-circle" size={24} color={colors.primary} />;
+        return <Ionicons name="information-circle" size={20} color={colors.primary} />;
     }
   };
 
@@ -118,7 +120,8 @@ export const Toast: React.FC<ToastProps> = ({
       style={[
         styles.container,
         {
-          transform: [{ translateY }],
+          top: 60 + index * 90, // Stack toasts vertically
+          transform: [{ translateX }],
           opacity,
         },
       ]}
@@ -127,7 +130,7 @@ export const Toast: React.FC<ToastProps> = ({
         <View style={styles.content}>
           <View style={styles.iconContainer}>{getIcon()}</View>
           <View style={styles.textContainer}>
-            <Text style={styles.message} numberOfLines={2}>
+            <Text style={styles.message} numberOfLines={1}>
               {message}
             </Text>
             {type === 'download' && progress !== undefined && (
@@ -148,9 +151,9 @@ export const Toast: React.FC<ToastProps> = ({
             <TouchableOpacity
               style={styles.closeButton}
               onPress={hideToast}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close" size={20} color={colors.textPrimary} />
+              <Ionicons name="close" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -162,49 +165,48 @@ export const Toast: React.FC<ToastProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 60,
-    left: spacing.md,
     right: spacing.md,
     zIndex: 9999,
   },
   toast: {
     width: TOAST_WIDTH,
-    borderRadius: borderRadius.large,
+    borderRadius: borderRadius.medium,
     backgroundColor: colors.backgroundSecondary,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   iconContainer: {
-    marginRight: spacing.md,
+    marginRight: spacing.sm,
   },
   textContainer: {
     flex: 1,
   },
   message: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Poppins_500Medium',
     color: colors.textPrimary,
-    lineHeight: 20,
+    lineHeight: 16,
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.sm,
-    gap: spacing.sm,
+    marginTop: spacing.xs,
+    gap: spacing.xs,
   },
   progressBar: {
     flex: 1,
-    height: 4,
+    height: 3,
     backgroundColor: colors.backgroundTertiary,
     borderRadius: 2,
     overflow: 'hidden',
@@ -215,14 +217,14 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   progressText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Poppins_600SemiBold',
     color: colors.secondary,
-    minWidth: 40,
+    minWidth: 32,
     textAlign: 'right',
   },
   closeButton: {
     padding: spacing.xs,
-    marginLeft: spacing.sm,
+    marginLeft: spacing.xs,
   },
 });

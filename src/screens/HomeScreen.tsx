@@ -89,6 +89,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [showSortModal, setShowSortModal] = useState(false);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [showSongOptions, setShowSongOptions] = useState(false);
+  
+  // Multi-select state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedSongs, setSelectedSongs] = useState<Set<string>>(new Set());
 
   const { currentSong, play } = usePlayerStore();
   const { addToQueue, playAndBuildQueue } = useQueueStore();
@@ -283,6 +287,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSongPress = (song: Song, contextList?: Song[]) => {
+    if (selectionMode) {
+      toggleSongSelection(song.id);
+      return;
+    }
     playAndBuildQueue(song, contextList);
     play(song);
     navigation.navigate('Player', { song });
@@ -310,6 +318,63 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       addToQueue(selectedSong, true); // Add as manual
       console.log('Added to queue:', selectedSong.name);
     }
+  };
+
+  const { downloadSong, deleteDownload, isDownloaded, isDownloading } = useDownloadStore();
+
+  const handleDownloadSong = () => {
+    if (selectedSong) {
+      downloadSong(selectedSong);
+    }
+  };
+
+  const handleDeleteDownload = () => {
+    if (selectedSong) {
+      deleteDownload(selectedSong.id);
+    }
+  };
+
+  // Multi-select handlers
+  const handleSongLongPress = (song: Song) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      setSelectedSongs(new Set([song.id]));
+    }
+  };
+
+  const toggleSongSelection = (songId: string) => {
+    setSelectedSongs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(songId)) {
+        newSet.delete(songId);
+      } else {
+        newSet.add(songId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllSongs = () => {
+    setSelectedSongs(new Set(songs.map(s => s.id)));
+  };
+
+  const deselectAllSongs = () => {
+    setSelectedSongs(new Set());
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedSongs(new Set());
+  };
+
+  const handleDownloadSelected = async () => {
+    for (const songId of selectedSongs) {
+      const song = songs.find(s => s.id === songId);
+      if (song) {
+        downloadSong(song);
+      }
+    }
+    exitSelectionMode();
   };
 
   // ── Sort Modal ──
@@ -384,7 +449,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.suggestedSection}>
           <View style={styles.suggestedSectionHeader}>
             <Text style={styles.suggestedSectionTitle}>Recently Played</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('RecentlyPlayed')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -400,11 +465,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {recentlyPlayed.map((song) => {
+              {recentlyPlayed.map((song, index) => {
                 const imageUri = getImageUrl(song.image);
                 return (
                   <TouchableOpacity
-                    key={song.id}
+                    key={`recent-${song.id}-${index}`}
                     style={styles.suggestedCard}
                     onPress={() => handleSongPress(song, recentlyPlayed)}
                     activeOpacity={0.7}
@@ -433,7 +498,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.suggestedSection}>
           <View style={styles.suggestedSectionHeader}>
             <Text style={styles.suggestedSectionTitle}>Artists</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => setSelectedCategory('Artists')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -472,7 +537,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.suggestedSection}>
           <View style={styles.suggestedSectionHeader}>
             <Text style={styles.suggestedSectionTitle}>Most Played</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => setSelectedCategory('Songs')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -481,11 +546,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {mostPlayed.map((song) => {
+            {mostPlayed.map((song, index) => {
               const imageUri = getImageUrl(song.image);
               return (
                 <TouchableOpacity
-                  key={`most-${song.id}`}
+                  key={`most-${song.id}-${index}`}
                   style={styles.suggestedCard}
                   onPress={() => handleSongPress(song, mostPlayed)}
                   activeOpacity={0.7}
@@ -515,15 +580,36 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   // ── Render: Songs Header (count + sort) ──
   const renderSongsHeader = () => (
     <View style={styles.listHeader}>
-      <Text style={styles.listHeaderCount}>{songs.length} songs</Text>
-      <TouchableOpacity
-        style={styles.sortButton}
-        onPress={() => setShowSortModal(true)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.sortButtonText}>{sortOption}</Text>
-        <Ionicons name="swap-vertical" size={16} color={colors.primary} />
-      </TouchableOpacity>
+      {selectionMode ? (
+        <>
+          <Text style={styles.listHeaderCount}>
+            {selectedSongs.size} selected
+          </Text>
+          <View style={styles.selectionActions}>
+            {selectedSongs.size === songs.length ? (
+              <TouchableOpacity onPress={deselectAllSongs} activeOpacity={0.7}>
+                <Text style={styles.actionText}>Deselect All</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={selectAllSongs} activeOpacity={0.7}>
+                <Text style={styles.actionText}>Select All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.listHeaderCount}>{songs.length} songs</Text>
+          <TouchableOpacity
+            style={styles.sortButton}
+            onPress={() => setShowSortModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.sortButtonText}>{sortOption}</Text>
+            <Ionicons name="swap-vertical" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 
@@ -532,21 +618,44 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <FlatList
       key="songs-list"
       data={songs}
-      keyExtractor={(item) => item.id}
+      keyExtractor={(item, index) => `song-${item.id}-${index}`}
       ListHeaderComponent={renderSongsHeader}
-      renderItem={({ item }) => (
-        <SongItem
-          song={item}
-          title={item.name}
-          artist={getArtistNames(item)}
-          duration={formatDuration(item.duration)}
-          albumArtUri={getImageUrl(item.image)}
-          onPress={() => handleSongPress(item, songs)}
-          onMorePress={() => handleSongMorePress(item)}
-          isPlaying={currentSong?.id === item.id}
-          style={styles.listItem}
-        />
-      )}
+      renderItem={({ item }) => {
+        const isSelected = selectedSongs.has(item.id);
+        return (
+          <View style={styles.songItemWrapper}>
+            {selectionMode && (
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => toggleSongSelection(item.id)}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.checkboxInner,
+                  isSelected && styles.checkboxSelected
+                ]}>
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={16} color={colors.textPrimary} />
+                  )}
+                </View>
+              </TouchableOpacity>
+            )}
+            <SongItem
+              song={item}
+              title={item.name}
+              artist={getArtistNames(item)}
+              duration={formatDuration(item.duration)}
+              albumArtUri={getImageUrl(item.image)}
+              onPress={() => handleSongPress(item, songs)}
+              onLongPress={() => handleSongLongPress(item)}
+              onMorePress={selectionMode ? undefined : handleSongMorePress}
+              isPlaying={currentSong?.id === item.id}
+              style={styles.listItem}
+              showMoreButton={!selectionMode}
+            />
+          </View>
+        );
+      }}
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.5}
       ListFooterComponent={
@@ -589,7 +698,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <FlatList
       key="artists-list"
       data={artists}
-      keyExtractor={(item) => item.id}
+      keyExtractor={(item, index) => `artist-${item.id}-${index}`}
       ListHeaderComponent={renderArtistsHeader}
       renderItem={({ item }) => {
         const imageUri = getImageUrl(item.image);
@@ -663,7 +772,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <FlatList
       key="albums-grid"
       data={albums}
-      keyExtractor={(item) => item.id}
+      keyExtractor={(item, index) => `album-${item.id}-${index}`}
       numColumns={2}
       ListHeaderComponent={renderAlbumsHeader}
       columnWrapperStyle={styles.albumRow}
@@ -764,17 +873,42 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.appNameContainer}>
-          <Ionicons name="musical-notes" size={28} color={colors.primary} />
-          <Text style={styles.appName}>Mume</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={handleSearchPress}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="search-outline" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        {selectionMode && selectedCategory === 'Songs' ? (
+          <View style={styles.selectionHeader}>
+            <TouchableOpacity
+              onPress={exitSelectionMode}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close" size={28} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.appName}>Select Songs</Text>
+            <TouchableOpacity
+              onPress={handleDownloadSelected}
+              disabled={selectedSongs.size === 0}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons 
+                name="download-outline" 
+                size={24} 
+                color={selectedSongs.size > 0 ? colors.secondary : colors.textMuted} 
+              />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <View style={styles.appNameContainer}>
+              <Ionicons name="musical-notes" size={28} color={colors.primary} />
+              <Text style={styles.appName}>Mume</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={handleSearchPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="search-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* Offline Banner */}
@@ -818,7 +952,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <SongOptionsModal
         visible={showSongOptions}
         song={selectedSong}
+        isDownloaded={selectedSong ? isDownloaded(selectedSong.id) : false}
+        isDownloading={selectedSong ? isDownloading(selectedSong.id) : false}
         onClose={() => setShowSongOptions(false)}
+        onDownload={handleDownloadSong}
+        onDeleteDownload={handleDeleteDownload}
         onAddToQueue={handleAddToQueue}
       />
     </View>
@@ -983,7 +1121,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 13,
-    fontFamily: 'Poppins_500Medium',
+    fontFamily: 'Poppins_600SemiBold',
     color: colors.primary,
   },
   horizontalScroll: {
@@ -1175,5 +1313,43 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  
+  // Multi-select styles
+  selectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  selectionActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  actionText: {
+    fontSize: 14,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.primary,
+  },
+  songItemWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    marginRight: spacing.sm,
+    padding: spacing.xs,
+  },
+  checkboxInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 });

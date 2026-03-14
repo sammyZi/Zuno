@@ -12,3 +12,4 @@ export { PlaylistsScreen } from './PlaylistsScreen';
 export { FavoritesScreen } from './FavoritesScreen';
 export { SettingsScreen } from './SettingsScreen';
 export { DownloadsScreen } from './DownloadsScreen';
+export { RecentlyPlayedScreen } from './RecentlyPlayedScreen';

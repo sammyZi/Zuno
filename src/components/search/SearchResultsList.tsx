@@ -39,9 +39,9 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
   if (activeFilter === 'Songs' && songs.length > 0) {
     return (
       <View style={styles.section}>
-        {songs.map((song) => (
+        {songs.map((song, index) => (
           <SongItem
-            key={song.id}
+            key={`search-song-${song.id}-${index}`}
             song={song}
             title={song.name}
             artist={getArtistNames(song)}
@@ -61,11 +61,11 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
   if (activeFilter === 'Artists' && artists.length > 0) {
     return (
       <View style={styles.section}>
-        {artists.map((artist) => {
+        {artists.map((artist, index) => {
           const imageUri = getImageUrl(artist.image);
           return (
             <TouchableOpacity
-              key={artist.id}
+              key={`search-artist-${artist.id}-${index}`}
               style={styles.artistResult}
               onPress={() => onArtistPress(artist)}
               activeOpacity={0.7}
@@ -98,11 +98,11 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
   if (activeFilter === 'Albums' && albums.length > 0) {
     return (
       <View style={styles.section}>
-        {albums.map((album) => {
+        {albums.map((album, index) => {
           const imageUri = getImageUrl(album.image);
           return (
             <TouchableOpacity
-              key={album.id}
+              key={`search-album-${album.id}-${index}`}
               style={styles.albumResult}
               onPress={() => onAlbumPress(album)}
               activeOpacity={0.7}

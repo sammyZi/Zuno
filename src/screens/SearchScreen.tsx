@@ -38,7 +38,7 @@ import {
 } from '../components/search';
 import { SongOptionsModal } from '../components/song';
 import { searchSongs, searchArtists, searchAlbums } from '../services/api';
-import { usePlayerStore, useDataStore, useQueueStore } from '../store';
+import { usePlayerStore, useDataStore, useQueueStore, useDownloadStore } from '../store';
 
 type Props = StackScreenProps<RootStackParamList, 'Search'>;
 
@@ -183,6 +183,20 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const { downloadSong, deleteDownload, isDownloaded, isDownloading } = useDownloadStore();
+
+  const handleDownloadSong = () => {
+    if (selectedSong) {
+      downloadSong(selectedSong);
+    }
+  };
+
+  const handleDeleteDownload = () => {
+    if (selectedSong) {
+      deleteDownload(selectedSong.id);
+    }
+  };
+
   const hasResults = songs.length > 0 || artists.length > 0 || albums.length > 0;
 
   return (
@@ -268,7 +282,11 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
       <SongOptionsModal
         visible={showSongOptions}
         song={selectedSong}
+        isDownloaded={selectedSong ? isDownloaded(selectedSong.id) : false}
+        isDownloading={selectedSong ? isDownloading(selectedSong.id) : false}
         onClose={() => setShowSongOptions(false)}
+        onDownload={handleDownloadSong}
+        onDeleteDownload={handleDeleteDownload}
         onAddToQueue={handleAddToQueue}
       />
     </View>

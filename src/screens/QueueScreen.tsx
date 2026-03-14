@@ -263,7 +263,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
                       const artistNames = getArtistNames(song);
                       return (
                         <Animated.View
-                          key={song.id}
+                          key={`recommended-${song.id}-${index}`}
                           entering={FadeInUp.delay(300 + index * 50).springify()}
                           style={styles.recommendedItem}
                         >

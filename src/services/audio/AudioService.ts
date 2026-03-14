@@ -85,6 +85,7 @@ class AudioServiceClass {
    * Load audio from song
    */
   async loadAudio(song: Song): Promise<void> {
+    let audioUrl = '';
     try {
       this.playbackStatus = 'loading';
       this.callbacks.onLoading?.(true);
@@ -95,7 +96,6 @@ class AudioServiceClass {
       }
 
       // Check for local file first (offline download)
-      let audioUrl: string;
       const localUri = DownloadService.getLocalUri(song.id);
       
       if (localUri) {
@@ -111,10 +111,17 @@ class AudioServiceClass {
       }
 
       console.log('[AudioService] Loading audio:', song.name);
+      console.log('[AudioService] Audio URL:', audioUrl);
 
-      // Create and load new sound
+      // Create and load new sound with proper headers
       const { sound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
+        { 
+          uri: audioUrl,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36',
+            'Accept': '*/*',
+          }
+        },
         { shouldPlay: false, progressUpdateIntervalMillis: 500 },
         this.onPlaybackStatusUpdate.bind(this)
       );
@@ -130,6 +137,7 @@ class AudioServiceClass {
       this.callbacks.onLoading?.(false);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load audio';
       console.error('[AudioService] Load error:', errorMessage);
+      console.error('[AudioService] Audio URL was:', audioUrl);
       this.callbacks.onError?.(errorMessage);
       throw error;
     }

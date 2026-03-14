@@ -37,6 +37,7 @@ export type RootStackParamList = {
   PlaylistDetail: {
     playlistId: string;
   };
+  RecentlyPlayed: undefined;
   ComponentShowcase: undefined;
 };
 
