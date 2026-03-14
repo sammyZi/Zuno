@@ -11,6 +11,7 @@ import type { Song } from '../types/api';
  */
 export type TabParamList = {
   Home: undefined;
+  Downloads: undefined;
   Playlists: undefined;
   Favorites: undefined;
   Settings: undefined;

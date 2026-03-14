@@ -35,7 +35,9 @@ import { SongItem, SongOptionsModal } from '../components/song';
 import { LoadingSpinner, ErrorMessage } from '../components/common';
 import { searchSongs, searchArtists, searchAlbums } from '../services/api';
 import { getImageUrl, formatDuration, getArtistNames } from '../utils/audio';
-import { usePlayerStore, useDataStore, useQueueStore } from '../store';
+import { isOnline, subscribeToNetworkStatus } from '../utils/network';
+import { DownloadService } from '../services/storage';
+import { usePlayerStore, useDataStore, useQueueStore, useHistoryStore, useDownloadStore } from '../store';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ALBUM_CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
@@ -78,6 +80,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -89,6 +92,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const { currentSong, play } = usePlayerStore();
   const { addToQueue, playAndBuildQueue } = useQueueStore();
+  const { getRecentlyPlayed } = useHistoryStore();
   const {
     getSuggestedSongs: getCachedSuggestedSongs,
     getSongs: getCachedSongs,
@@ -104,6 +108,54 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     loadInitialData();
   }, [selectedCategory]);
+
+  // Monitor network status
+  useEffect(() => {
+    const checkNetwork = async () => {
+      const online = await isOnline();
+      setIsOffline(!online);
+      
+      // If offline and on Songs category, load downloaded songs
+      if (!online && selectedCategory === 'Songs') {
+        await loadDownloadedSongs();
+      }
+    };
+
+    checkNetwork();
+
+    // Subscribe to network changes
+    const unsubscribe = subscribeToNetworkStatus((connected) => {
+      setIsOffline(!connected);
+      
+      // If went offline and on Songs category, switch to downloaded songs
+      if (!connected && selectedCategory === 'Songs') {
+        loadDownloadedSongs();
+      } else if (connected && selectedCategory === 'Songs') {
+        // If back online, reload from API
+        loadInitialData();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [selectedCategory]);
+
+  const loadDownloadedSongs = async () => {
+    try {
+      setLoading(true);
+      await DownloadService.initialize();
+      const downloads = DownloadService.getAllDownloads();
+      const downloadedSongs = downloads.map(d => d.song);
+      setSongs(downloadedSongs);
+      setHasMore(false); // No pagination for offline
+    } catch (error) {
+      console.error('Error loading downloaded songs:', error);
+      setError('Failed to load downloaded songs');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadInitialData = async () => {
     // Check cache first
@@ -310,8 +362,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   // ── Render: Suggested (horizontal scroll sections) ──
   const renderSuggestedSection = () => {
-    // Split suggested songs into sections
-    const recentlyPlayed = suggestedSongs.slice(0, 5);
+    // Get real recently played songs from history
+    const recentlyPlayed = getRecentlyPlayed(5);
     const artistsFromSongs = suggestedSongs.slice(0, 3);
     const mostPlayed = suggestedSongs.slice(3, 8);
 
@@ -336,37 +388,45 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-          >
-            {recentlyPlayed.map((song) => {
-              const imageUri = getImageUrl(song.image);
-              return (
-                <TouchableOpacity
-                  key={song.id}
-                  style={styles.suggestedCard}
-                  onPress={() => handleSongPress(song, recentlyPlayed)}
-                  activeOpacity={0.7}
-                >
-                  {imageUri ? (
-                    <Image source={{ uri: imageUri }} style={styles.suggestedCardImage} />
-                  ) : (
-                    <View style={[styles.suggestedCardImage, styles.suggestedCardPlaceholder]}>
-                      <Ionicons name="musical-notes" size={32} color={colors.textMuted} />
-                    </View>
-                  )}
-                  <Text style={styles.suggestedCardTitle} numberOfLines={2}>
-                    {song.name}
-                  </Text>
-                  <Text style={styles.suggestedCardSubtitle} numberOfLines={1}>
-                    {getArtistNames(song)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {recentlyPlayed.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Ionicons name="time-outline" size={32} color={colors.textMuted} />
+              <Text style={styles.emptySectionText}>No recently played songs</Text>
+              <Text style={styles.emptySectionSubtext}>Start playing music to see your history</Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+            >
+              {recentlyPlayed.map((song) => {
+                const imageUri = getImageUrl(song.image);
+                return (
+                  <TouchableOpacity
+                    key={song.id}
+                    style={styles.suggestedCard}
+                    onPress={() => handleSongPress(song, recentlyPlayed)}
+                    activeOpacity={0.7}
+                  >
+                    {imageUri ? (
+                      <Image source={{ uri: imageUri }} style={styles.suggestedCardImage} />
+                    ) : (
+                      <View style={[styles.suggestedCardImage, styles.suggestedCardPlaceholder]}>
+                        <Ionicons name="musical-notes" size={32} color={colors.textMuted} />
+                      </View>
+                    )}
+                    <Text style={styles.suggestedCardTitle} numberOfLines={2}>
+                      {song.name}
+                    </Text>
+                    <Text style={styles.suggestedCardSubtitle} numberOfLines={1}>
+                      {getArtistNames(song)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
         </View>
 
         {/* Artists */}
@@ -717,6 +777,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+      {/* Offline Banner */}
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Ionicons name="cloud-offline" size={16} color={colors.textPrimary} />
+          <Text style={styles.offlineBannerText}>
+            {selectedCategory === 'Songs' 
+              ? 'Offline - Showing downloaded songs only' 
+              : 'You are offline'}
+          </Text>
+        </View>
+      )}
+
       {/* Category Tabs */}
       <View style={styles.categoryWrapper}>
         <ScrollView
@@ -1062,5 +1134,46 @@ const styles = StyleSheet.create({
   loadingMore: {
     paddingVertical: spacing.lg,
     alignItems: 'center',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.warning + '20',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: borderRadius.medium,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.warning + '40',
+  },
+  offlineBannerText: {
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium',
+    color: colors.textPrimary,
+  },
+  emptySection: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundSecondary,
+    marginHorizontal: spacing.md,
+    borderRadius: borderRadius.large,
+    gap: spacing.sm,
+  },
+  emptySectionText: {
+    fontSize: 14,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textPrimary,
+    marginTop: spacing.sm,
+  },
+  emptySectionSubtext: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+    textAlign: 'center',
   },
 });

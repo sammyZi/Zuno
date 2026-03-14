@@ -12,6 +12,7 @@ import {
 } from 'expo-av';
 import { Song } from '../../types';
 import { getAudioUrl } from '../../utils/audio';
+import { DownloadService } from '../storage';
 
 export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'stopped' | 'error';
 
@@ -93,10 +94,20 @@ class AudioServiceClass {
         await this.unloadAudio();
       }
 
-      // Get audio URL
-      const audioUrl = getAudioUrl(song);
-      if (!audioUrl) {
-        throw new Error('No audio URL available for this song');
+      // Check for local file first (offline download)
+      let audioUrl: string;
+      const localUri = DownloadService.getLocalUri(song.id);
+      
+      if (localUri) {
+        console.log('[AudioService] Using local file:', song.name);
+        audioUrl = localUri;
+      } else {
+        // Get streaming URL
+        audioUrl = getAudioUrl(song);
+        if (!audioUrl) {
+          throw new Error('No audio URL available for this song');
+        }
+        console.log('[AudioService] Streaming from URL:', song.name);
       }
 
       console.log('[AudioService] Loading audio:', song.name);

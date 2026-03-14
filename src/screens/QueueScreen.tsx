@@ -107,6 +107,8 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleAddRecommended = (song: Song) => {
     useQueueStore.getState().addToQueue(song, true); // Add as manual
+    // Remove from recommendations list
+    setRecommendedSongs(prev => prev.filter(s => s.id !== song.id));
   };
 
   const handleDragEnd = ({ data, from, to }: { data: QueueItem[]; from: number; to: number }) => {

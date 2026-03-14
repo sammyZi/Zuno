@@ -1,3 +1,3 @@
 // Storage and download services
-// DownloadService, etc.
-export {};
+export { DownloadService } from './DownloadService';
+export type { DownloadProgress, DownloadedSong } from './DownloadService';

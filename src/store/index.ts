@@ -9,3 +9,6 @@ export { useSearchStore } from './searchStore';
 export { useDataStore } from './dataStore';
 export { useFavoritesStore } from './favoritesStore';
 export { useHistoryStore } from './historyStore';
+export { useDownloadStore } from './downloadStore';
+export { usePlaylistStore } from './playlistStore';
+export { useSettingsStore, type ThemeMode, type AudioQuality, type DownloadPreference } from './settingsStore';

@@ -20,6 +20,7 @@ import {
 import { ComponentShowcaseScreen } from '../screens/ComponentShowcaseScreen';
 import { PlaylistDetailScreen } from '../screens/PlaylistDetailScreen';
 import { MiniPlayer } from '../components/player';
+import { ToastManager } from '../components/common';
 import { colors } from '../theme/colors';
 import { navigationRef, getActiveRouteName } from './navigationRef';
 
@@ -160,6 +161,9 @@ export const AppNavigator: React.FC = () => {
             }}
           />
         </Stack.Navigator>
+        
+        {/* Toast Manager - Global download progress notifications */}
+        <ToastManager />
         
         {/* Mini Player - Persistent across all screens except Player */}
         <MiniPlayer currentRouteName={currentRouteName} />

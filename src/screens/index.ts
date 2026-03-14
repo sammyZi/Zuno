@@ -11,3 +11,4 @@ export { AlbumScreen } from './AlbumScreen';
 export { PlaylistsScreen } from './PlaylistsScreen';
 export { FavoritesScreen } from './FavoritesScreen';
 export { SettingsScreen } from './SettingsScreen';
+export { DownloadsScreen } from './DownloadsScreen';

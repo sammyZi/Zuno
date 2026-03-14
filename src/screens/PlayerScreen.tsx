@@ -50,6 +50,8 @@ import { SongOptionsModal } from '../components/song/SongOptionsModal';
 import { usePlayerStore } from '../store/playerStore';
 import { useQueueStore, RepeatMode } from '../store/queueStore';
 import { useFavoritesStore } from '../store/favoritesStore';
+import { useHistoryStore } from '../store/historyStore';
+import { useDownloadStore } from '../store/downloadStore';
 import { getImageUrl, getArtistNames } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -261,6 +263,14 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
   } = useQueueStore();
 
   const { toggleFavorite, isFavorite } = useFavoritesStore();
+  const { addToHistory } = useHistoryStore();
+  const { 
+    downloadSong, 
+    isDownloaded, 
+    isDownloading, 
+    getProgress,
+    deleteDownload 
+  } = useDownloadStore();
 
   // ── Modal state ──
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -282,6 +292,13 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
       play(route.params.song);
     }
   }, [route.params?.song]);
+
+  // Track song in history when it starts playing
+  useEffect(() => {
+    if (currentSong && isPlaying) {
+      addToHistory(currentSong);
+    }
+  }, [currentSong?.id, isPlaying]);
 
   // ── Artwork breathing animation when playing ──
   useEffect(() => {
@@ -388,6 +405,18 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
     if (currentSong) {
       // Add to queue (playlist functionality)
       addToQueue(currentSong, true); // Add as manual
+    }
+  };
+
+  const handleDownloadToggle = async () => {
+    if (!currentSong) return;
+
+    if (isDownloaded(currentSong.id)) {
+      // Delete download
+      await deleteDownload(currentSong.id);
+    } else if (!isDownloading(currentSong.id)) {
+      // Start download
+      await downloadSong(currentSong);
     }
   };
 
@@ -597,7 +626,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Bottom Actions: shuffle, repeat, like, queue */}
+        {/* Bottom Actions: shuffle, repeat, download, like, queue */}
         <Animated.View
           entering={FadeInUp.duration(400).delay(450)}
           style={styles.bottomActions}
@@ -623,6 +652,37 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
                 </View>
               )}
             </View>
+          </TouchableOpacity>
+
+          {/* Download Button with Progress */}
+          <TouchableOpacity 
+            style={styles.bottomBtn} 
+            activeOpacity={0.7}
+            onPress={handleDownloadToggle}
+          >
+            {isDownloading(currentSong.id) ? (
+              <View style={styles.downloadProgressContainer}>
+                <View style={styles.downloadProgressBg}>
+                  <View 
+                    style={[
+                      styles.downloadProgressFill, 
+                      { width: `${getProgress(currentSong.id)}%` }
+                    ]} 
+                  />
+                </View>
+                <Ionicons 
+                  name="download-outline" 
+                  size={22} 
+                  color={colors.textMuted} 
+                />
+              </View>
+            ) : (
+              <Ionicons 
+                name={isDownloaded(currentSong.id) ? 'checkmark-circle' : 'download-outline'} 
+                size={22} 
+                color={isDownloaded(currentSong.id) ? colors.secondary : colors.textMuted} 
+              />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -714,16 +774,35 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
             contentContainerStyle={styles.lyricsContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.lyricsText}>
-              {/* Placeholder lyrics - in a real app, fetch from API */}
-              {`[Verse 1]\nLorem ipsum dolor sit amet\nConsectetur adipiscing elit\nSed do eiusmod tempor incididunt\nUt labore et dolore magna aliqua\n\n[Chorus]\nUt enim ad minim veniam\nQuis nostrud exercitation ullamco\nLaboris nisi ut aliquip ex ea\nCommodo consequat\n\n[Verse 2]\nDuis aute irure dolor in\nReprehenderit in voluptate velit\nEsse cillum dolore eu fugiat\nNulla pariatur excepteur sint\n\n[Chorus]\nUt enim ad minim veniam\nQuis nostrud exercitation ullamco\nLaboris nisi ut aliquip ex ea\nCommodo consequat\n\n[Bridge]\nSed ut perspiciatis unde omnis\nIste natus error sit voluptatem\nAccusantium doloremque laudantium\nTotam rem aperiam eaque ipsa\n\n[Chorus]\nUt enim ad minim veniam\nQuis nostrud exercitation ullamco\nLaboris nisi ut aliquip ex ea\nCommodo consequat`}
-            </Text>
-            <View style={styles.lyricsFooter}>
-              <Ionicons name="musical-note" size={16} color={colors.textMuted} />
-              <Text style={styles.lyricsFooterText}>
-                Lyrics powered by music API
-              </Text>
-            </View>
+            {currentSong.hasLyrics === false ? (
+              <View style={styles.noLyricsContainer}>
+                <Ionicons name="musical-notes-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.noLyricsText}>Lyrics not available</Text>
+                <Text style={styles.noLyricsSubtext}>
+                  Lyrics for this song are not available at the moment
+                </Text>
+              </View>
+            ) : currentSong.lyricsSnippet ? (
+              <>
+                <Text style={styles.lyricsText}>
+                  {currentSong.lyricsSnippet}
+                </Text>
+                <View style={styles.lyricsFooter}>
+                  <Ionicons name="musical-note" size={16} color={colors.textMuted} />
+                  <Text style={styles.lyricsFooterText}>
+                    Lyrics powered by JioSaavn
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.noLyricsContainer}>
+                <Ionicons name="time-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.noLyricsText}>Loading lyrics...</Text>
+                <Text style={styles.noLyricsSubtext}>
+                  Lyrics will appear here when available
+                </Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -980,6 +1059,26 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_700Bold',
     color: colors.backgroundPrimary,
   },
+  downloadProgressContainer: {
+    position: 'relative',
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  downloadProgressBg: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.backgroundSecondary,
+    overflow: 'hidden',
+  },
+  downloadProgressFill: {
+    height: '100%',
+    backgroundColor: colors.secondary,
+    opacity: 0.3,
+  },
 
   // ── Lyrics section ──
   lyricsSection: {
@@ -1074,6 +1173,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
+  },
+  noLyricsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+  },
+  noLyricsText: {
+    fontSize: 18,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textMuted,
+    marginTop: spacing.lg,
+    textAlign: 'center',
+  },
+  noLyricsSubtext: {
+    fontSize: 14,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 
   // ── Empty ──

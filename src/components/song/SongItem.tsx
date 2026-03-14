@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
 import { AlbumArt } from './AlbumArt';
 
-import { useFavoritesStore } from '../../store';
+import { useFavoritesStore, useDownloadStore } from '../../store';
 import { Song } from '../../types/api';
 
 interface SongItemProps {
@@ -47,7 +47,9 @@ export const SongItem: React.FC<SongItemProps> = ({
   style,
 }) => {
   const { isFavorite, toggleFavorite } = useFavoritesStore();
+  const { isDownloaded } = useDownloadStore();
   const isFav = song ? isFavorite(song.id) : false;
+  const isOffline = song ? isDownloaded(song.id) : false;
 
   return (
     <TouchableOpacity
@@ -84,6 +86,17 @@ export const SongItem: React.FC<SongItemProps> = ({
             color={isFav ? colors.primary : colors.textMuted}
           />
         </TouchableOpacity>
+      )}
+
+      {/* Downloaded Indicator */}
+      {isOffline && (
+        <View style={styles.downloadedIndicator}>
+          <Ionicons
+            name="checkmark-circle"
+            size={16}
+            color={colors.secondary}
+          />
+        </View>
       )}
 
       {/* Orange play button */}
@@ -139,6 +152,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   favButton: {
+    padding: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.xs,
+  },
+  downloadedIndicator: {
     padding: spacing.xs,
     justifyContent: 'center',
     alignItems: 'center',

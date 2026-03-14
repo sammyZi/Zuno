@@ -15,6 +15,7 @@ import {
   PlaylistsScreen,
   FavoritesScreen,
   SettingsScreen,
+  DownloadsScreen,
 } from '../screens';
 import { colors } from '../theme/colors';
 
@@ -102,6 +103,20 @@ export const TabNavigator: React.FC = () => {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
+              size={22}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Downloads"
+        component={DownloadsScreen}
+        options={{
+          title: 'Downloads',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'download' : 'download-outline'}
               size={22}
               color={color}
             />
