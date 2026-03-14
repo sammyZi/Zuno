@@ -77,8 +77,8 @@ export const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({
       // If same song is playing, pause it
       pause();
     } else {
-      // Otherwise play the song
-      setQueue(playlist.songs, index);
+      // Play only the selected song, don't auto-populate queue
+      // User must manually add songs or use "Play All"
       play(song);
     }
   };

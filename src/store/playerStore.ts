@@ -104,11 +104,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           console.log('[PlayerStore] Playback ended');
           set({ isPlaying: false, position: 0 });
           
-          // Get next song from queue based on repeat mode
+          // Get next song from queue
           const { useQueueStore } = await import('./queueStore');
           const queueState = useQueueStore.getState();
           
           console.log('[PlayerStore] Current repeat mode:', queueState.repeat);
+          console.log('[PlayerStore] Queue length:', queueState.queue.length);
+          console.log('[PlayerStore] Current index:', queueState.currentIndex);
           
           const nextSong = queueState.nextSong();
           
@@ -161,6 +163,22 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         }
         
         set({ currentSong: targetSong, position: 0, duration: 0, isPlaying: false });
+        
+        // Set up queue with just this song if queue is empty or doesn't contain it
+        const { useQueueStore } = await import('./queueStore');
+        const queueState = useQueueStore.getState();
+        
+        // Only set queue if it's empty or doesn't contain the song
+        if (queueState.queue.length === 0 || !queueState.queue.find(s => s.id === targetSong.id)) {
+          console.log('[PlayerStore] Setting up single-song queue for:', targetSong.name);
+          useQueueStore.getState().setQueue([targetSong], 0);
+        } else {
+          // Song exists in queue, update current index
+          const songIndex = queueState.queue.findIndex(s => s.id === targetSong.id);
+          if (songIndex >= 0) {
+            useQueueStore.getState().setCurrentIndex(songIndex);
+          }
+        }
         
         // Small delay to ensure clean transition
         await new Promise(resolve => setTimeout(resolve, 50));

@@ -61,17 +61,30 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
   const handleRemoveSong = (index: number) => {
     if (index === currentIndex) {
       // Cannot remove currently playing song
+      console.log('[QueueScreen] Cannot remove currently playing song');
       return;
     }
+    console.log('[QueueScreen] Removing song at index:', index);
     removeFromQueue(index);
+    // Force UI refresh
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleClearQueue = () => {
     setShowClearModal(true);
   };
 
-  const confirmClearQueue = () => {
+  const confirmClearQueue = async () => {
+    console.log('[QueueScreen] Clearing queue and stopping playback');
+    
+    // Stop playback first
+    const { pause, reset } = usePlayerStore.getState();
+    await pause();
+    await reset();
+    
+    // Clear the queue
     clearQueue();
+    
     setShowClearModal(false);
     navigation.goBack();
   };

@@ -29,8 +29,8 @@ export const FavoritesScreen: React.FC = () => {
   const [showSongOptions, setShowSongOptions] = useState(false);
 
   const handleSongPress = (song: Song, index: number) => {
-    // If selecting a song from favorites, set the whole favorites list as the queue
-    setQueue(favorites, index);
+    // Play only the selected song, don't auto-populate queue with all favorites
+    // User must manually add songs to queue
     play(song);
   };
 

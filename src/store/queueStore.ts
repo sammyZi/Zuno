@@ -100,7 +100,15 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
 
       removeFromQueue: (index) =>
         set((state) => {
+          if (index < 0 || index >= state.queue.length) {
+            console.warn('[QueueStore] Invalid index for removal:', index);
+            return state;
+          }
+
+          const songToRemove = state.queue[index];
           const newQueue = state.queue.filter((_, i) => i !== index);
+          
+          // Calculate new current index
           const newIndex =
             state.currentIndex === index
               ? Math.min(state.currentIndex, newQueue.length - 1)
@@ -113,12 +121,15 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
             .filter(idx => idx !== index) // Remove the deleted index
             .map(idx => idx > index ? idx - 1 : idx); // Shift indices after deletion
 
+          console.log('[QueueStore] Removed song:', songToRemove?.name, 'at index:', index);
+          console.log('[QueueStore] New queue length:', newQueue.length, 'New current index:', newIndex);
+
           return {
             queue: newQueue,
             currentIndex: newIndex,
             manuallyAddedIndices: newManualIndices,
             originalQueue: state.shuffle
-              ? state.originalQueue.filter((s) => s.id !== state.queue[index]?.id)
+              ? state.originalQueue.filter((s) => s.id !== songToRemove?.id)
               : newQueue,
           };
         }),
@@ -161,7 +172,10 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
 
         console.log('[QueueStore] nextSong called - repeat:', repeat, 'currentIndex:', currentIndex, 'queueLength:', queue.length);
 
-        if (queue.length === 0) return null;
+        if (queue.length === 0) {
+          console.log('[QueueStore] Queue is empty');
+          return null;
+        }
 
         // Repeat one - return current song
         if (repeat === 'one') {
@@ -180,12 +194,12 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
             set({ currentIndex: 0 });
             return queue[0];
           }
-          // No repeat - return null
-          console.log('[QueueStore] No repeat - queue ended');
+          // No repeat (off) - return null to stop playback
+          console.log('[QueueStore] Repeat off - queue ended, returning null');
           return null;
         }
 
-        // Normal next
+        // Normal next - move to next song in queue
         console.log('[QueueStore] Normal next - moving to index:', nextIndex);
         set({ currentIndex: nextIndex });
         return queue[nextIndex];
@@ -259,13 +273,17 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
 
       setRepeat: (mode) => set({ repeat: mode }),
 
-      clearQueue: () =>
+      clearQueue: () => {
+        console.log('[QueueStore] Clearing entire queue');
         set({
           queue: [],
           currentIndex: -1,
           originalQueue: [],
           manuallyAddedIndices: [],
-        }),
+          shuffle: false,
+          repeat: 'off',
+        });
+      },
 
       resetQueue: () => {
         // Reset queue but keep current song if playing
@@ -290,39 +308,32 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
         }
       },
 
-      setQueue: (songs, startIndex = 0) =>
+      setQueue: (songs, startIndex = 0) => {
+        console.log('[QueueStore] Setting queue with', songs.length, 'songs, starting at index', startIndex);
         set({
           queue: songs,
           currentIndex: startIndex,
           originalQueue: songs,
           manuallyAddedIndices: [],
           shuffle: false,
-        }),
+        });
+      },
 
       /**
-       * Play a song and build a queue from context.
-       * If contextSongs is provided (e.g. from a list, album, search results),
-       * sets the full list as the queue.
-       * If no context, sets just the played song without auto-populating.
+       * Play a song without auto-populating the queue.
+       * Only adds the single song being played to the queue.
+       * User must manually add additional songs to build the queue.
        */
       playAndBuildQueue: (song, contextSongs) => {
-        if (contextSongs && contextSongs.length > 0) {
-          // Find the index of the song in the context
-          const index = contextSongs.findIndex((s) => s.id === song.id);
-          set({
-            queue: contextSongs,
-            currentIndex: index >= 0 ? index : 0,
-            originalQueue: contextSongs,
-            shuffle: false,
-          });
-        } else {
-          // Single song — set it as queue only
-          set({
-            queue: [song],
-            currentIndex: 0,
-            originalQueue: [song],
-            shuffle: false,
-          });
-        }
+        // Always set just the single song, ignore contextSongs
+        // User must manually add songs to queue if they want more
+        console.log('[QueueStore] Playing single song without auto-populating queue:', song.name);
+        set({
+          queue: [song],
+          currentIndex: 0,
+          originalQueue: [song],
+          shuffle: false,
+          manuallyAddedIndices: [],
+        });
       },
     }));
