@@ -1,10 +1,8 @@
 /**
  * Mini Player Component
- * Persistent bottom bar with smooth Reanimated animations
- *
- * NOTE: This component lives OUTSIDE the Stack.Navigator, so it cannot
- * use useNavigation/useRoute hooks. It receives `currentRouteName` as a
- * prop and uses the shared `navigationRef` for navigation.
+ * Figma-matched persistent bottom mini-player bar
+ * Shows: Song title + artist | pause/play + next button
+ * Progress bar on top
  */
 
 import React, { useEffect } from 'react';
@@ -24,9 +22,7 @@ import Animated, {
   withSequence,
   interpolate,
   Extrapolation,
-  runOnJS,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayerStore } from '../../store/playerStore';
 import { useQueueStore } from '../../store/queueStore';
@@ -117,7 +113,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
         onPress={handlePress}
         activeOpacity={0.9}
       >
-        {/* Album Art with rounded corners */}
+        {/* Album Art */}
         <View style={styles.albumArtContainer}>
           {albumArtUrl ? (
             <Image
@@ -135,10 +131,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
         {/* Song Info */}
         <View style={styles.songInfo}>
           <Text style={styles.songTitle} numberOfLines={1} ellipsizeMode="tail">
-            {currentSong.name}
-          </Text>
-          <Text style={styles.artistText} numberOfLines={1} ellipsizeMode="tail">
-            {artistName}
+            {currentSong.name} - {artistName}
           </Text>
         </View>
 
@@ -149,26 +142,19 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
             onPress={handlePlayPause}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={[colors.primaryLight, colors.primary]}
-              style={styles.playButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
-                size={18}
-                color="#fff"
-                style={!isPlaying ? { marginLeft: 2 } : undefined}
-              />
-            </LinearGradient>
+            <Ionicons
+              name={isPlaying ? 'pause' : 'play'}
+              size={18}
+              color={colors.textPrimary}
+              style={!isPlaying ? { marginLeft: 2 } : undefined}
+            />
           </AnimatedTouchable>
 
           <TouchableOpacity style={styles.nextButton} onPress={async () => {
             const next = nextSong();
             if (next) await play(next);
           }} activeOpacity={0.7}>
-            <Ionicons name="play-skip-forward" size={18} color={colors.textMuted} />
+            <Ionicons name="play-skip-forward" size={18} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -182,22 +168,20 @@ const styles = StyleSheet.create({
     bottom: 70,
     left: 8,
     right: 8,
-    height: 68,
+    height: 62,
     backgroundColor: 'rgba(30, 33, 42, 0.97)',
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
-    // Shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 12,
-    // Subtle border
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
   },
   progressTrack: {
-    height: 2.5,
+    height: 2,
     backgroundColor: 'rgba(255,255,255,0.06)',
     width: '100%',
   },
@@ -220,9 +204,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   albumArt: {
-    width: 46,
-    height: 46,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 8,
     backgroundColor: colors.backgroundTertiary,
   },
   albumArtPlaceholder: {
@@ -236,16 +220,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   songTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: 'Poppins_500Medium',
     color: colors.textPrimary,
-    marginBottom: 1,
-  },
-  artistText: {
-    fontSize: 11,
-    fontFamily: 'Poppins_400Regular',
-    color: colors.textMuted,
   },
   controls: {
     flexDirection: 'row',
@@ -253,19 +231,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   playButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  playButtonGradient: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },

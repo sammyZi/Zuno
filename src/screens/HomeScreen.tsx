@@ -1,7 +1,10 @@
 /**
  * HomeScreen Component
- * Main screen with categories, search, and content sections
- * All items displayed as vertical lists with small image, name, play/3-dots
+ * Main screen matching Figma design with:
+ *  - Suggested: Horizontal cards for Recently Played, Artists (circular), Most Played
+ *  - Songs: Vertical list with count + sort options
+ *  - Artists: Vertical list with circular images, album/song count
+ *  - Albums: 2-column grid with album cards
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -17,6 +20,8 @@ import {
   ActivityIndicator,
   Platform,
   Image,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { CompositeScreenProps } from '@react-navigation/native';
@@ -26,11 +31,14 @@ import type { RootStackParamList, TabParamList } from '../navigation/types';
 import type { Song, Artist, Album } from '../types/api';
 import { colors, spacing, borderRadius, typography } from '../theme';
 import { CategoryTab } from '../components/home';
-import { SongItem } from '../components/song';
+import { SongItem, SongOptionsModal } from '../components/song';
 import { LoadingSpinner, ErrorMessage } from '../components/common';
 import { searchSongs, searchArtists, searchAlbums } from '../services/api';
 import { getImageUrl, formatDuration, getArtistNames } from '../utils/audio';
-import { usePlayerStore, useDataStore } from '../store';
+import { usePlayerStore, useDataStore, useQueueStore } from '../store';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ALBUM_CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<TabParamList, 'Home'>,
@@ -41,6 +49,25 @@ type Category = 'Suggested' | 'Songs' | 'Artists' | 'Albums';
 
 const CATEGORIES: Category[] = ['Suggested', 'Songs', 'Artists', 'Albums'];
 const ITEMS_PER_PAGE = 20;
+
+const SORT_OPTIONS = [
+  'Ascending',
+  'Descending',
+  'Artist',
+  'Album',
+  'Year',
+  'Date Added',
+  'Date Modified',
+  'Composer',
+];
+
+const ARTIST_SORT_OPTIONS = [
+  'Date Added',
+  'Ascending',
+  'Descending',
+  'Most Songs',
+  'Most Albums',
+];
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState<Category>('Suggested');
@@ -54,8 +81,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [sortOption, setSortOption] = useState('Ascending');
+  const [artistSortOption, setArtistSortOption] = useState('Date Added');
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [showSongOptions, setShowSongOptions] = useState(false);
 
   const { currentSong, play } = usePlayerStore();
+  const { addToQueue } = useQueueStore();
   const {
     getSuggestedSongs: getCachedSuggestedSongs,
     getSongs: getCachedSongs,
@@ -214,42 +247,232 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('Search');
   };
 
-  // ── Render: Suggested (vertical list of SongItems) ──
-  const renderSuggestedSection = () => (
-    <FlatList
-      data={suggestedSongs}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <SongItem
-          title={item.name}
-          artist={getArtistNames(item)}
-          duration={formatDuration(item.duration)}
-          albumArtUri={getImageUrl(item.image)}
-          onPress={() => handleSongPress(item)}
-          onMorePress={() => console.log('More', item.name)}
-          isPlaying={currentSong?.id === item.id}
-          style={styles.listItem}
-        />
-      )}
-      
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
-      contentContainerStyle={styles.listContent}
-      showsVerticalScrollIndicator={false}
-    />
+  const handleSongMorePress = (song: Song) => {
+    setSelectedSong(song);
+    setShowSongOptions(true);
+  };
+
+  const handleAddToQueue = () => {
+    if (selectedSong) {
+      addToQueue(selectedSong);
+      console.log('Added to queue:', selectedSong.name);
+    }
+  };
+
+  // ── Sort Modal ──
+  const renderSortModal = () => {
+    const options = selectedCategory === 'Artists' ? ARTIST_SORT_OPTIONS : SORT_OPTIONS;
+    const currentSort = selectedCategory === 'Artists' ? artistSortOption : sortOption;
+    
+    return (
+      <Modal
+        visible={showSortModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSortModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSortModal(false)}
+        >
+          <View style={styles.sortModalContainer}>
+            <View style={styles.sortModal}>
+              {options.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.sortOption}
+                  onPress={() => {
+                    if (selectedCategory === 'Artists') {
+                      setArtistSortOption(option);
+                    } else {
+                      setSortOption(option);
+                    }
+                    setShowSortModal(false);
+                  }}
+                >
+                  <Text style={styles.sortOptionText}>{option}</Text>
+                  <View style={[
+                    styles.radioOuter,
+                    currentSort === option && styles.radioOuterActive,
+                  ]}>
+                    {currentSort === option && <View style={styles.radioInner} />}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
+
+  // ── Render: Suggested (horizontal scroll sections) ──
+  const renderSuggestedSection = () => {
+    // Split suggested songs into sections
+    const recentlyPlayed = suggestedSongs.slice(0, 5);
+    const artistsFromSongs = suggestedSongs.slice(0, 3);
+    const mostPlayed = suggestedSongs.slice(3, 8);
+
+    return (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.suggestedContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
+        {/* Recently Played */}
+        <View style={styles.suggestedSection}>
+          <View style={styles.suggestedSectionHeader}>
+            <Text style={styles.suggestedSectionTitle}>Recently Played</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScroll}
+          >
+            {recentlyPlayed.map((song) => {
+              const imageUri = getImageUrl(song.image);
+              return (
+                <TouchableOpacity
+                  key={song.id}
+                  style={styles.suggestedCard}
+                  onPress={() => handleSongPress(song)}
+                  activeOpacity={0.7}
+                >
+                  {imageUri ? (
+                    <Image source={{ uri: imageUri }} style={styles.suggestedCardImage} />
+                  ) : (
+                    <View style={[styles.suggestedCardImage, styles.suggestedCardPlaceholder]}>
+                      <Ionicons name="musical-notes" size={32} color={colors.textMuted} />
+                    </View>
+                  )}
+                  <Text style={styles.suggestedCardTitle} numberOfLines={2}>
+                    {song.name}
+                  </Text>
+                  <Text style={styles.suggestedCardSubtitle} numberOfLines={1}>
+                    {getArtistNames(song)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Artists */}
+        <View style={styles.suggestedSection}>
+          <View style={styles.suggestedSectionHeader}>
+            <Text style={styles.suggestedSectionTitle}>Artists</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScroll}
+          >
+            {artistsFromSongs.map((song, index) => {
+              const imageUri = getImageUrl(song.image);
+              const artistName = getArtistNames(song);
+              return (
+                <TouchableOpacity
+                  key={`artist-${song.id}-${index}`}
+                  style={styles.suggestedArtistCard}
+                  onPress={() => handleSongPress(song)}
+                  activeOpacity={0.7}
+                >
+                  {imageUri ? (
+                    <Image source={{ uri: imageUri }} style={styles.suggestedArtistImage} />
+                  ) : (
+                    <View style={[styles.suggestedArtistImage, styles.suggestedCardPlaceholder]}>
+                      <Ionicons name="person" size={32} color={colors.textMuted} />
+                    </View>
+                  )}
+                  <Text style={styles.suggestedArtistName} numberOfLines={1}>
+                    {artistName}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Most Played */}
+        <View style={styles.suggestedSection}>
+          <View style={styles.suggestedSectionHeader}>
+            <Text style={styles.suggestedSectionTitle}>Most Played</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScroll}
+          >
+            {mostPlayed.map((song) => {
+              const imageUri = getImageUrl(song.image);
+              return (
+                <TouchableOpacity
+                  key={`most-${song.id}`}
+                  style={styles.suggestedCard}
+                  onPress={() => handleSongPress(song)}
+                  activeOpacity={0.7}
+                >
+                  {imageUri ? (
+                    <Image source={{ uri: imageUri }} style={styles.suggestedCardImage} />
+                  ) : (
+                    <View style={[styles.suggestedCardImage, styles.suggestedCardPlaceholder]}>
+                      <Ionicons name="musical-notes" size={32} color={colors.textMuted} />
+                    </View>
+                  )}
+                  <Text style={styles.suggestedCardTitle} numberOfLines={2}>
+                    {song.name}
+                  </Text>
+                  <Text style={styles.suggestedCardSubtitle} numberOfLines={1}>
+                    {getArtistNames(song)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  // ── Render: Songs Header (count + sort) ──
+  const renderSongsHeader = () => (
+    <View style={styles.listHeader}>
+      <Text style={styles.listHeaderCount}>{songs.length} songs</Text>
+      <TouchableOpacity
+        style={styles.sortButton}
+        onPress={() => setShowSortModal(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.sortButtonText}>{sortOption}</Text>
+        <Ionicons name="swap-vertical" size={16} color={colors.primary} />
+      </TouchableOpacity>
+    </View>
   );
 
   // ── Render: Songs (vertical list) ──
   const renderSongsSection = () => (
     <FlatList
+      key="songs-list"
       data={songs}
       keyExtractor={(item) => item.id}
+      ListHeaderComponent={renderSongsHeader}
       renderItem={({ item }) => (
         <SongItem
           title={item.name}
@@ -257,7 +480,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           duration={formatDuration(item.duration)}
           albumArtUri={getImageUrl(item.image)}
           onPress={() => handleSongPress(item)}
-          onMorePress={() => console.log('More', item.name)}
+          onMorePress={() => handleSongMorePress(item)}
           isPlaying={currentSong?.id === item.id}
           style={styles.listItem}
         />
@@ -284,50 +507,55 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     />
   );
 
-  // ── Render: Artists (vertical list with square image + name + dots) ──
+  // ── Render: Artists Header ──
+  const renderArtistsHeader = () => (
+    <View style={styles.listHeader}>
+      <Text style={styles.listHeaderCount}>{artists.length} artists</Text>
+      <TouchableOpacity
+        style={styles.sortButton}
+        onPress={() => setShowSortModal(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.sortButtonText}>{artistSortOption}</Text>
+        <Ionicons name="swap-vertical" size={16} color={colors.primary} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  // ── Render: Artists (vertical list with circular images) ──
   const renderArtistsSection = () => (
     <FlatList
+      key="artists-list"
       data={artists}
       keyExtractor={(item) => item.id}
+      ListHeaderComponent={renderArtistsHeader}
       renderItem={({ item }) => {
         const imageUri = getImageUrl(item.image);
         return (
           <TouchableOpacity
-            style={styles.rowItem}
+            style={styles.artistRowItem}
             onPress={() => handleArtistPress(item)}
             activeOpacity={0.7}
           >
-            {/* Square image */}
+            {/* Circular image */}
             {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.rowImage} />
+              <Image source={{ uri: imageUri }} style={styles.artistRowImage} />
             ) : (
-              <View style={[styles.rowImage, styles.rowImagePlaceholder]}>
+              <View style={[styles.artistRowImage, styles.artistRowImagePlaceholder]}>
                 <Text style={styles.placeholderLetter}>
                   {item.name.charAt(0).toUpperCase()}
                 </Text>
               </View>
             )}
-            {/* Name */}
-            <View style={styles.rowInfo}>
-              <Text style={styles.rowTitle} numberOfLines={1}>
+            {/* Name + info */}
+            <View style={styles.artistRowInfo}>
+              <Text style={styles.artistRowTitle} numberOfLines={1}>
                 {item.name}
               </Text>
-              <Text style={styles.rowSubtitle} numberOfLines={1}>
-                Artist
+              <Text style={styles.artistRowSubtitle} numberOfLines={1}>
+                1 Album  |  12 Songs
               </Text>
             </View>
-            {/* Play button */}
-            <TouchableOpacity style={styles.rowPlayButton} activeOpacity={0.7}>
-              <Ionicons name="play" size={14} color={colors.backgroundPrimary} />
-            </TouchableOpacity>
-            {/* 3 dots */}
-            <TouchableOpacity
-              style={styles.rowMoreButton}
-              activeOpacity={0.7}
-              onPress={() => console.log('More', item.name)}
-            >
-              <Ionicons name="ellipsis-vertical" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
           </TouchableOpacity>
         );
       }}
@@ -353,50 +581,64 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     />
   );
 
-  // ── Render: Albums (vertical list with square image + name + artist + dots) ──
+  // ── Render: Albums Header ──
+  const renderAlbumsHeader = () => (
+    <View style={styles.listHeader}>
+      <Text style={styles.listHeaderCount}>{albums.length} albums</Text>
+      <TouchableOpacity
+        style={styles.sortButton}
+        onPress={() => setShowSortModal(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.sortButtonText}>Date Modified</Text>
+        <Ionicons name="swap-vertical" size={16} color={colors.primary} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  // ── Render: Albums (2-column grid) ──
   const renderAlbumsSection = () => (
     <FlatList
+      key="albums-grid"
       data={albums}
       keyExtractor={(item) => item.id}
+      numColumns={2}
+      ListHeaderComponent={renderAlbumsHeader}
+      columnWrapperStyle={styles.albumRow}
       renderItem={({ item }) => {
         const imageUri = getImageUrl(item.image);
         return (
           <TouchableOpacity
-            style={styles.rowItem}
+            style={styles.albumGridCard}
             onPress={() => handleAlbumPress(item)}
             activeOpacity={0.7}
           >
-            {/* Square image */}
+            {/* Album art */}
             {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.rowImage} />
+              <Image source={{ uri: imageUri }} style={styles.albumGridImage} />
             ) : (
-              <View style={[styles.rowImage, styles.rowImagePlaceholder]}>
-                <Text style={styles.placeholderLetter}>
-                  {item.name.charAt(0).toUpperCase()}
-                </Text>
+              <View style={[styles.albumGridImage, styles.albumGridPlaceholder]}>
+                <Ionicons name="disc" size={40} color={colors.textMuted} />
               </View>
             )}
-            {/* Name + artist */}
-            <View style={styles.rowInfo}>
-              <Text style={styles.rowTitle} numberOfLines={1}>
+            {/* Info row with name and 3-dot */}
+            <View style={styles.albumGridInfoRow}>
+              <Text style={styles.albumGridTitle} numberOfLines={1}>
                 {item.name}
               </Text>
-              <Text style={styles.rowSubtitle} numberOfLines={1}>
-                {item.primaryArtists || 'Album'}
-              </Text>
+              <TouchableOpacity
+                onPress={() => console.log('More', item.name)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="ellipsis-vertical" size={14} color={colors.textMuted} />
+              </TouchableOpacity>
             </View>
-            {/* Play button */}
-            <TouchableOpacity style={styles.rowPlayButton} activeOpacity={0.7}>
-              <Ionicons name="play" size={14} color={colors.backgroundPrimary} />
-            </TouchableOpacity>
-            {/* 3 dots */}
-            <TouchableOpacity
-              style={styles.rowMoreButton}
-              activeOpacity={0.7}
-              onPress={() => console.log('More', item.name)}
-            >
-              <Ionicons name="ellipsis-vertical" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
+            <Text style={styles.albumGridSubtitle} numberOfLines={1}>
+              {item.primaryArtists || 'Unknown'}  |  {item.year || '2023'}
+            </Text>
+            <Text style={styles.albumGridSongCount}>
+              {item.songCount || '10'} songs
+            </Text>
           </TouchableOpacity>
         );
       }}
@@ -461,8 +703,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.appNameContainer}>
-          <Ionicons name="musical-note" size={28} color={colors.primary} />
-          <Text style={styles.appName}>Vibe</Text>
+          <Ionicons name="musical-notes" size={28} color={colors.primary} />
+          <Text style={styles.appName}>Mume</Text>
         </View>
         <TouchableOpacity
           style={styles.searchButton}
@@ -489,10 +731,22 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             />
           ))}
         </ScrollView>
+        <View style={styles.categoryDivider} />
       </View>
 
       {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
+
+      {/* Sort Modal */}
+      {renderSortModal()}
+
+      {/* Song Options Modal */}
+      <SongOptionsModal
+        visible={showSongOptions}
+        song={selectedSong}
+        onClose={() => setShowSongOptions(false)}
+        onAddToQueue={handleAddToQueue}
+      />
     </View>
   );
 };
@@ -509,7 +763,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   appNameContainer: {
     flexDirection: 'row',
@@ -530,20 +784,102 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryWrapper: {
-    paddingBottom: spacing.md,
+    paddingBottom: 0,
   },
   categorySlider: {
     paddingHorizontal: spacing.md,
     gap: spacing.lg,
   },
+  categoryDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginHorizontal: spacing.md,
+  },
   content: {
     flex: 1,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
+
+  // ── List header (count + sort) ──
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
+  listHeaderCount: {
+    fontSize: 16,
+    fontFamily: 'Poppins_700Bold',
+    color: colors.textPrimary,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sortButtonText: {
+    fontSize: 13,
+    fontFamily: 'Poppins_500Medium',
+    color: colors.primary,
+  },
+
+  // ── Sort Modal ──
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  sortModalContainer: {
+    position: 'absolute',
+    top: 200,
+    right: spacing.md,
+  },
+  sortModal: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.large,
+    paddingVertical: spacing.sm,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+  },
+  sortOptionText: {
+    fontSize: 14,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textPrimary,
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioOuterActive: {
+    borderColor: colors.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+
+  // ── List content ──
   listContent: {
     paddingHorizontal: spacing.md,
     paddingBottom: 100,
@@ -551,59 +887,163 @@ const styles = StyleSheet.create({
   listItem: {
   },
 
-  /* Generic row item (Artists / Albums) — flat, no card bg */
-  rowItem: {
+  // ── Suggested sections ──
+  suggestedContent: {
+    paddingBottom: 100,
+  },
+  suggestedSection: {
+    marginBottom: spacing.lg,
+  },
+  suggestedSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  suggestedSectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins_700Bold',
+    color: colors.textPrimary,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontFamily: 'Poppins_500Medium',
+    color: colors.primary,
+  },
+  horizontalScroll: {
+    paddingHorizontal: spacing.md,
+  },
+  suggestedCard: {
+    width: 150,
+    marginRight: spacing.md,
+  },
+  suggestedCardImage: {
+    width: 150,
+    height: 150,
+    borderRadius: borderRadius.medium,
+    backgroundColor: colors.backgroundSecondary,
+    marginBottom: spacing.sm,
+  },
+  suggestedCardPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundTertiary,
+  },
+  suggestedCardTitle: {
+    fontSize: 13,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  suggestedCardSubtitle: {
+    fontSize: 11,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+  },
+
+  // ── Suggested Artist Cards (circular) ──
+  suggestedArtistCard: {
+    width: 120,
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  suggestedArtistImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.backgroundSecondary,
+    marginBottom: spacing.sm,
+  },
+  suggestedArtistName: {
+    fontSize: 13,
+    fontFamily: 'Poppins_500Medium',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+
+  // ── Artist Row Items (circular image, Figma style) ──
+  artistRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
   },
-  rowImage: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.small,
+  artistRowImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: colors.backgroundTertiary,
   },
-  rowImagePlaceholder: {
+  artistRowImagePlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.backgroundTertiary,
   },
   placeholderLetter: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'Poppins_600SemiBold',
     color: colors.primary,
   },
-  rowInfo: {
+  artistRowInfo: {
     flex: 1,
     marginLeft: spacing.md,
-    marginRight: spacing.sm,
   },
-  rowTitle: {
-    fontSize: 13,
-    fontFamily: 'Poppins_500Medium',
+  artistRowTitle: {
+    fontSize: 15,
+    fontFamily: 'Poppins_600SemiBold',
     color: colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  rowSubtitle: {
-    fontSize: 11,
+  artistRowSubtitle: {
+    fontSize: 12,
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
   },
-  rowPlayButton: {
-    width: 32,
-    height: 32,
-    borderRadius: borderRadius.round,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.xs,
+
+  // ── Album Grid Items (2-column, Figma style) ──
+  albumRow: {
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
   },
-  rowMoreButton: {
-    padding: spacing.xs,
-    minWidth: 32,
-    minHeight: 32,
+  albumGridCard: {
+    width: ALBUM_CARD_WIDTH,
+  },
+  albumGridImage: {
+    width: ALBUM_CARD_WIDTH,
+    height: ALBUM_CARD_WIDTH,
+    borderRadius: borderRadius.medium,
+    backgroundColor: colors.backgroundSecondary,
+    marginBottom: spacing.sm,
+  },
+  albumGridPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.backgroundTertiary,
+  },
+  albumGridInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  albumGridTitle: {
+    fontSize: 14,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textPrimary,
+    flex: 1,
+    marginRight: 4,
+  },
+  albumGridSubtitle: {
+    fontSize: 11,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  albumGridSongCount: {
+    fontSize: 11,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+    marginTop: 1,
   },
 
   centerContainer: {

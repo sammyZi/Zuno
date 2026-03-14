@@ -1,46 +1,50 @@
 /**
  * SearchScreen Component
- * Full-featured search with debouncing, trending suggestions, and categorized results
+ * Figma-matched search with:
+ *  - Search bar with orange border when focused
+ *  - Recent Searches list with "Clear All" button
+ *  - Category filter chips (Songs, Artists, Albums, Folders)
+ *  - Song results as vertical list with play button + 3-dot
+ *  - Not Found state with sad emoji illustration
+ * 
+ * References:
+ *  - 20_Dark_search type keyword.png
+ *  - 21_Dark_search result not found.png
+ *  - 22_Dark_search results list.png
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StatusBar,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../navigation/types';
 import type { Song, Artist, Album } from '../types/api';
-import { colors, spacing, borderRadius, typography } from '../theme';
-import { SongItem } from '../components/song';
-import { ArtistCard } from '../components/home/ArtistCard';
-import { AlbumCard } from '../components/home/AlbumCard';
+import { colors, spacing } from '../theme';
+import {
+  SearchBar,
+  SearchFilterChips,
+  SearchEmptyState,
+  SearchLoadingState,
+  RecentSearches,
+  SearchResultsList,
+  type SearchFilter,
+} from '../components/search';
+import { SongOptionsModal } from '../components/song';
 import { searchSongs, searchArtists, searchAlbums } from '../services/api';
-import { getImageUrl, formatDuration, getArtistNames } from '../utils/audio';
-import { usePlayerStore, useDataStore } from '../store';
+import { usePlayerStore, useDataStore, useQueueStore } from '../store';
 
 type Props = StackScreenProps<RootStackParamList, 'Search'>;
 
 const DEBOUNCE_DELAY = 500;
 
-const TRENDING_SUGGESTIONS = [
-  'Arijit Singh',
-  'Trending Hindi',
-  'English Pop',
-  'Bollywood Hits',
-  'Romantic Songs',
-  'Party Mix',
-  'Lofi Beats',
-  'Old Classics',
-];
+const SEARCH_FILTERS: SearchFilter[] = ['Songs', 'Artists', 'Albums', 'Folders'];
 
 export const SearchScreen: React.FC<Props> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,18 +53,17 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<SearchFilter>('Songs');
+  const [isFocused, setIsFocused] = useState(false);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [showSongOptions, setShowSongOptions] = useState(false);
 
   const { currentSong, play } = usePlayerStore();
-  const { getSearchResults, setSearchResults } = useDataStore();
+  const { addToQueue } = useQueueStore();
+  const { getSearchResults, setSearchResults, recentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches } = useDataStore();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const inputRef = useRef<TextInput>(null);
 
-  useEffect(() => {
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
-  }, []);
-
+  // Debounced search effect
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -93,10 +96,11 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
       setArtists(cachedResults.artists);
       setAlbums(cachedResults.albums);
       setHasSearched(true);
+      // Add to recent searches
+      addRecentSearch(query);
       return;
     }
 
-    // No cache, fetch from API
     setLoading(true);
     setHasSearched(true);
 
@@ -115,8 +119,10 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
       setArtists(artistsData);
       setAlbums(albumsData);
 
-      // Cache the results
       setSearchResults(query, songsData, artistsData, albumsData);
+      
+      // Add to recent searches
+      addRecentSearch(query);
     } catch (error) {
       console.error('Search error:', error);
       setSongs([]);
@@ -146,11 +152,30 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
     setArtists([]);
     setAlbums([]);
     setHasSearched(false);
-    inputRef.current?.focus();
   };
 
-  const handleTrendingPress = (term: string) => {
+  const handleRecentSearchPress = (term: string) => {
     setSearchQuery(term);
+  };
+
+  const handleClearRecent = () => {
+    clearRecentSearches();
+  };
+
+  const handleRemoveRecentSearch = (term: string) => {
+    removeRecentSearch(term);
+  };
+
+  const handleSongMorePress = (song: Song) => {
+    setSelectedSong(song);
+    setShowSongOptions(true);
+  };
+
+  const handleAddToQueue = () => {
+    if (selectedSong) {
+      addToQueue(selectedSong);
+      console.log('Added to queue:', selectedSong.name);
+    }
   };
 
   const hasResults = songs.length > 0 || artists.length > 0 || albums.length > 0;
@@ -169,26 +194,24 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
 
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search-outline" size={18} color={colors.textMuted} />
-          <TextInput
-            ref={inputRef}
-            style={styles.searchInput}
-            placeholder="Search songs, artists, albums..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={handleClear} activeOpacity={0.7}>
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onClear={handleClear}
+          isFocused={isFocused}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        />
       </View>
+
+      {/* Filter chips (shown when results exist) */}
+      {hasSearched && hasResults && (
+        <SearchFilterChips
+          filters={SEARCH_FILTERS}
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+        />
+      )}
 
       {/* Content */}
       <ScrollView
@@ -198,135 +221,46 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
       >
         {/* Loading */}
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Searching...</Text>
-          </View>
-        )}
+        {loading && <SearchLoadingState />}
 
-        {/* Trending suggestions (shown when no query) */}
+        {/* Recent Searches (shown when no query) */}
         {!loading && !hasSearched && (
-          <View style={styles.trendingSection}>
-            <View style={styles.trendingHeader}>
-              <Ionicons name="trending-up" size={20} color={colors.primary} />
-              <Text style={styles.trendingSectionTitle}>Trending Searches</Text>
-            </View>
-            <View style={styles.trendingGrid}>
-              {TRENDING_SUGGESTIONS.map((term) => (
-                <TouchableOpacity
-                  key={term}
-                  style={styles.trendingChip}
-                  onPress={() => handleTrendingPress(term)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="search-outline"
-                    size={14}
-                    color={colors.textMuted}
-                  />
-                  <Text style={styles.trendingChipText}>{term}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <RecentSearches
+            searches={recentSearches}
+            onSearchPress={handleRecentSearchPress}
+            onRemoveSearch={handleRemoveRecentSearch}
+            onClearAll={handleClearRecent}
+          />
         )}
 
         {/* No results */}
         {!loading && hasSearched && !hasResults && (
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconBg}>
-              <Ionicons name="search-outline" size={40} color={colors.textMuted} />
-            </View>
-            <Text style={styles.emptyTitle}>No results found</Text>
-            <Text style={styles.emptySubtitle}>
-              Try different keywords or check the spelling
-            </Text>
-          </View>
+          <SearchEmptyState query={searchQuery} />
         )}
 
         {/* Results */}
         {!loading && hasResults && (
-          <>
-            {/* Songs */}
-            {songs.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Songs</Text>
-                  <Text style={styles.resultCount}>
-                    {songs.length} result{songs.length !== 1 ? 's' : ''}
-                  </Text>
-                </View>
-                {songs.map((song) => (
-                  <SongItem
-                    key={song.id}
-                    title={song.name}
-                    artist={getArtistNames(song)}
-                    duration={formatDuration(song.duration)}
-                    albumArtUri={getImageUrl(song.image)}
-                    onPress={() => handleSongPress(song)}
-                    isPlaying={currentSong?.id === song.id}
-                    style={styles.songItem}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* Artists */}
-            {artists.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Artists</Text>
-                  <Text style={styles.resultCount}>
-                    {artists.length} result{artists.length !== 1 ? 's' : ''}
-                  </Text>
-                </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                >
-                  {artists.map((artist) => (
-                    <ArtistCard
-                      key={artist.id}
-                      name={artist.name}
-                      imageUri={getImageUrl(artist.image)}
-                      onPress={() => handleArtistPress(artist)}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Albums */}
-            {albums.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Albums</Text>
-                  <Text style={styles.resultCount}>
-                    {albums.length} result{albums.length !== 1 ? 's' : ''}
-                  </Text>
-                </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                >
-                  {albums.map((album) => (
-                    <AlbumCard
-                      key={album.id}
-                      name={album.name}
-                      artist={album.primaryArtists}
-                      imageUri={getImageUrl(album.image)}
-                      onPress={() => handleAlbumPress(album)}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-          </>
+          <SearchResultsList
+            songs={songs}
+            artists={artists}
+            albums={albums}
+            activeFilter={activeFilter}
+            currentSongId={currentSong?.id}
+            onSongPress={handleSongPress}
+            onSongMorePress={handleSongMorePress}
+            onArtistPress={handleArtistPress}
+            onAlbumPress={handleAlbumPress}
+          />
         )}
       </ScrollView>
+
+      {/* Song Options Modal */}
+      <SongOptionsModal
+        visible={showSongOptions}
+        song={selectedSong}
+        onClose={() => setShowSongOptions(false)}
+        onAddToQueue={handleAddToQueue}
+      />
     </View>
   );
 };
@@ -350,135 +284,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.round,
-    paddingHorizontal: spacing.md,
-    height: 44,
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.backgroundTertiary,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontFamily: 'Poppins_400Regular',
-    paddingVertical: 0,
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingBottom: 100,
-  },
-
-  /* Trending */
-  trendingSection: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-  },
-  trendingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  trendingSectionTitle: {
-    ...typography.bodyLarge,
-    color: colors.textPrimary,
-  },
-  trendingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  trendingChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.backgroundSecondary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.round,
-    borderWidth: 1,
-    borderColor: colors.backgroundTertiary,
-  },
-  trendingChipText: {
-    ...typography.body,
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-
-  /* Loading */
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginTop: spacing.md,
-  },
-
-  /* Empty */
-  emptyContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-    paddingHorizontal: spacing.xl,
-  },
-  emptyIconBg: {
-    width: 88,
-    height: 88,
-    borderRadius: borderRadius.round,
-    backgroundColor: colors.backgroundSecondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.backgroundTertiary,
-  },
-  emptyTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
-
-  /* Sections */
-  section: {
-    marginBottom: spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-  },
-  resultCount: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  songItem: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  horizontalList: {
-    paddingHorizontal: spacing.md,
   },
 });

@@ -1,3 +1,5 @@
-// Queue-related components
-// QueueItem, etc.
-export {};
+/**
+ * Queue Components
+ */
+
+export { QueueItem } from './QueueItem';

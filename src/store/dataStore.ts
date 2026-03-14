@@ -29,6 +29,7 @@ interface DataState {
   artists: CachedData<Artist[]> | null;
   albums: CachedData<Album[]> | null;
   searchCache: SearchCache | null;
+  recentSearches: string[];
   
   // Cache duration (5 minutes)
   cacheDuration: number;
@@ -39,6 +40,9 @@ interface DataState {
   setArtists: (artists: Artist[], page: number) => void;
   setAlbums: (albums: Album[], page: number) => void;
   setSearchResults: (query: string, songs: Song[], artists: Artist[], albums: Album[]) => void;
+  addRecentSearch: (query: string) => void;
+  removeRecentSearch: (query: string) => void;
+  clearRecentSearches: () => void;
   
   // Getters with cache validation
   getSuggestedSongs: () => Song[] | null;
@@ -63,6 +67,7 @@ export const useDataStore = create<DataState>()(
       artists: null,
       albums: null,
       searchCache: null,
+      recentSearches: [],
       cacheDuration: CACHE_DURATION,
 
       // Set cached data
@@ -123,6 +128,26 @@ export const useDataStore = create<DataState>()(
             timestamp: Date.now(),
           },
         }),
+
+      addRecentSearch: (query) =>
+        set((state) => {
+          const trimmedQuery = query.trim();
+          if (!trimmedQuery) return state;
+          
+          // Remove if already exists and add to front
+          const filtered = state.recentSearches.filter(s => s.toLowerCase() !== trimmedQuery.toLowerCase());
+          const newSearches = [trimmedQuery, ...filtered].slice(0, 10); // Keep max 10
+          
+          return { recentSearches: newSearches };
+        }),
+
+      removeRecentSearch: (query) =>
+        set((state) => ({
+          recentSearches: state.recentSearches.filter(s => s !== query),
+        })),
+
+      clearRecentSearches: () =>
+        set({ recentSearches: [] }),
 
       // Get cached data with validation
       getSuggestedSongs: () => {
@@ -206,6 +231,7 @@ export const useDataStore = create<DataState>()(
         artists: state.artists,
         albums: state.albums,
         searchCache: state.searchCache,
+        recentSearches: state.recentSearches,
       }),
     }
   )

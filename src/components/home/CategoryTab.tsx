@@ -1,6 +1,8 @@
 /**
  * CategoryTab Component
- * Tab button for category selection in Home Screen
+ * Figma-matched tab button for category selection
+ * Active: Orange text + bottom underline
+ * Inactive: Gray text
  */
 
 import React from 'react';
@@ -44,9 +46,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   label: {
-    ...typography.body,
     fontSize: 15,
-    color: colors.textTertiary,
+    color: colors.textMuted,
     fontFamily: 'Poppins_500Medium',
     letterSpacing: 0.3,
   },

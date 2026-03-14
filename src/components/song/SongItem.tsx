@@ -1,6 +1,11 @@
 /**
  * SongItem Component
- * Clean flat list item with play button, small text
+ * Matches Figma design:
+ *  - Square album art (rounded corners)
+ *  - Title (bold, white)
+ *  - Artist  |  Duration (subtitle, muted)
+ *  - Orange play/pause circle button
+ *  - 3-dot menu
  */
 
 import React from 'react';
@@ -54,7 +59,7 @@ export const SongItem: React.FC<SongItemProps> = ({
           {title}
         </Text>
         <Text style={styles.subtitle} numberOfLines={1}>
-          {artist}{duration ? ` · ${duration}` : ''}
+          {artist}{duration ? `  |  ${duration}` : ''}
         </Text>
       </View>
 
@@ -89,7 +94,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: 12,
   },
   info: {
     flex: 1,
@@ -97,16 +102,16 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   title: {
-    fontSize: 13,
-    fontFamily: 'Poppins_500Medium',
+    fontSize: 14,
+    fontFamily: 'Poppins_600SemiBold',
     color: colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: 3,
   },
   titleActive: {
     color: colors.primary,
   },
   subtitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
   },

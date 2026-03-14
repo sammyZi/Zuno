@@ -41,7 +41,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
   const prevScale = useSharedValue(1);
   const nextScale = useSharedValue(1);
 
-  const animatePress = (sv: Animated.SharedValue<number>) => {
+  const animatePress = (sv: { value: number }) => {
     sv.value = withSequence(
       withTiming(0.85, { duration: 70 }),
       withSpring(1, { damping: 12 }),

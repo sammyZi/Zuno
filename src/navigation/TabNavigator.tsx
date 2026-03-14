@@ -1,7 +1,7 @@
 /**
  * Tab Navigator
- * Bottom tab navigation with glassmorphism blur effect
- * iOS: BlurView, Android: semi-transparent background
+ * Bottom tab navigation matching Figma design
+ * Tabs: Home, Favorites, Playlists, Settings
  */
 
 import React from 'react';
@@ -21,9 +21,8 @@ import { colors } from '../theme/colors';
 const Tab = createBottomTabNavigator<TabParamList>();
 
 /**
- * Glassmorphism tab bar background
- * iOS: native BlurView
- * Android: tinted semi-transparent overlay (BlurView performance varies)
+ * Tab bar background
+ * Dark semi-transparent on both platforms
  */
 const TabBarBackground = () => {
   if (Platform.OS === 'ios') {
@@ -43,13 +42,12 @@ const TabBarBackground = () => {
     );
   }
 
-  // Android: glassmorphism via semi-transparent bg
   return (
     <View
       style={[
         StyleSheet.absoluteFill,
         {
-          backgroundColor: 'rgba(24, 26, 32, 0.92)',
+          backgroundColor: 'rgba(24, 26, 32, 0.95)',
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
         },
@@ -104,21 +102,7 @@ export const TabNavigator: React.FC = () => {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
-              size={20}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Playlists"
-        component={PlaylistsScreen}
-        options={{
-          title: 'Queue',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'list' : 'list-outline'}
-              size={20}
+              size={22}
               color={color}
             />
           ),
@@ -132,7 +116,21 @@ export const TabNavigator: React.FC = () => {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'heart' : 'heart-outline'}
-              size={20}
+              size={22}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Playlists"
+        component={PlaylistsScreen}
+        options={{
+          title: 'Playlists',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'list' : 'list-outline'}
+              size={22}
               color={color}
             />
           ),
@@ -146,7 +144,7 @@ export const TabNavigator: React.FC = () => {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'settings' : 'settings-outline'}
-              size={20}
+              size={22}
               color={color}
             />
           ),
