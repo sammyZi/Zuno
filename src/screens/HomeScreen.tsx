@@ -475,6 +475,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       ListHeaderComponent={renderSongsHeader}
       renderItem={({ item }) => (
         <SongItem
+          song={item}
           title={item.name}
           artist={getArtistNames(item)}
           duration={formatDuration(item.duration)}

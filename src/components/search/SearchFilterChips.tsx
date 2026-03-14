@@ -59,7 +59,7 @@ export const SearchFilterChips: React.FC<SearchFilterChipsProps> = ({
 
 const styles = StyleSheet.create({
   scrollView: {
-    maxHeight: 44,
+    // Allow natural height
   },
   container: {
     paddingHorizontal: spacing.md,

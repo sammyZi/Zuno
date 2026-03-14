@@ -147,6 +147,7 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
         {songs.map((song) => (
           <View key={song.id} style={styles.songItemContainer}>
             <SongItem
+              song={song}
               title={song.name}
               artist={getArtistNames(song)}
               albumArtUri={getImageUrl(song.image)}

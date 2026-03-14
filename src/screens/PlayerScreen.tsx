@@ -574,12 +574,16 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
             <Ionicons
               name={shuffle ? 'shuffle' : 'shuffle-outline'}
               size={22}
-              color={shuffle ? colors.primary : colors.textMuted}
+              color={shuffle ? colors.secondary : colors.textMuted}
             />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.bottomBtn} activeOpacity={0.7}>
-            <Ionicons name="timer-outline" size={22} color={colors.textMuted} />
+          <TouchableOpacity style={styles.bottomBtn} onPress={handleRepeatToggle} activeOpacity={0.7}>
+            <Ionicons
+              name={getRepeatIcon()}
+              size={22}
+              color={repeat !== 'off' ? colors.secondary : colors.textMuted}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomBtn} activeOpacity={0.7}>

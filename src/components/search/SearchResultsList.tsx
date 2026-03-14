@@ -42,6 +42,7 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
         {songs.map((song) => (
           <SongItem
             key={song.id}
+            song={song}
             title={song.name}
             artist={getArtistNames(song)}
             duration={formatDuration(song.duration)}

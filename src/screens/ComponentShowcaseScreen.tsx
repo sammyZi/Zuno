@@ -116,6 +116,7 @@ export const ComponentShowcaseScreen: React.FC = () => {
         {/* Song Items */}
         <SectionCard title="Song Item">
           <SongItem
+            song={{ id: 'mock1', name: 'Blinding Lights', duration: 200, image: [], downloadUrl: [], primaryArtists: 'The Weeknd' } as any}
             title="Blinding Lights"
             artist="The Weeknd"
             duration="3:20"
@@ -123,6 +124,7 @@ export const ComponentShowcaseScreen: React.FC = () => {
             onMorePress={() => console.log('More pressed')}
           />
           <SongItem
+            song={{ id: 'mock2', name: 'Currently Playing', duration: 255, image: [], downloadUrl: [], primaryArtists: 'Artist Name' } as any}
             title="Currently Playing Song"
             artist="Artist Name"
             duration="4:15"

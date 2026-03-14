@@ -96,8 +96,6 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
       setArtists(cachedResults.artists);
       setAlbums(cachedResults.albums);
       setHasSearched(true);
-      // Add to recent searches
-      addRecentSearch(query);
       return;
     }
 
@@ -120,9 +118,6 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
       setAlbums(albumsData);
 
       setSearchResults(query, songsData, artistsData, albumsData);
-      
-      // Add to recent searches
-      addRecentSearch(query);
     } catch (error) {
       console.error('Search error:', error);
       setSongs([]);
@@ -134,15 +129,24 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSongPress = (song: Song) => {
+    if (searchQuery.trim().length > 0) {
+      addRecentSearch(searchQuery.trim());
+    }
     play(song);
     navigation.navigate('Player', { song });
   };
 
   const handleArtistPress = (artist: Artist) => {
+    if (searchQuery.trim().length > 0) {
+      addRecentSearch(searchQuery.trim());
+    }
     navigation.navigate('Artist', { artistId: artist.id });
   };
 
   const handleAlbumPress = (album: Album) => {
+    if (searchQuery.trim().length > 0) {
+      addRecentSearch(searchQuery.trim());
+    }
     navigation.navigate('Album', { albumId: album.id });
   };
 
@@ -156,6 +160,7 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleRecentSearchPress = (term: string) => {
     setSearchQuery(term);
+    addRecentSearch(term);
   };
 
   const handleClearRecent = () => {
@@ -201,6 +206,11 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
           isFocused={isFocused}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          onSubmitEditing={() => {
+            if (searchQuery.trim().length > 0) {
+              addRecentSearch(searchQuery.trim());
+            }
+          }}
         />
       </View>
 

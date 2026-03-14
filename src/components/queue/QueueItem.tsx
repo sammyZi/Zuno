@@ -12,6 +12,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { getImageUrl, getArtistNames, formatDuration } from '../../utils/audio';
+import { AlbumArt } from '../song/AlbumArt';
 
 interface QueueItemProps {
   song: Song;
@@ -32,7 +33,7 @@ export const QueueItem: React.FC<QueueItemProps> = ({
   drag,
   isActive = false,
 }) => {
-  const imageUrl = getImageUrl(song.image, 'medium');
+  const imageUrl = getImageUrl(song.image, 'small');
   const artistNames = getArtistNames(song);
   const duration = formatDuration(song.duration);
 
@@ -40,37 +41,36 @@ export const QueueItem: React.FC<QueueItemProps> = ({
     <TouchableOpacity
       style={[
         styles.container,
-        isCurrentlyPlaying && styles.currentlyPlaying,
         isActive && styles.dragging,
       ]}
       onPress={onPress}
       activeOpacity={0.7}
+      onLongPress={drag}
     >
-      {/* Drag Handle */}
+      {/* Drag Handle (Left) */}
       <TouchableOpacity
         style={styles.dragHandle}
-        onLongPress={drag}
-        delayLongPress={100}
+        onPressIn={drag}
         activeOpacity={0.7}
       >
-        <Ionicons name="reorder-two" size={24} color={colors.textMuted} />
+        <Ionicons name="reorder-two" size={20} color={colors.textMuted} />
       </TouchableOpacity>
 
       {/* Album Art */}
-      <Image source={{ uri: imageUrl }} style={styles.albumArt} />
+      <AlbumArt uri={imageUrl} size="small" />
 
       {/* Song Info */}
       <View style={styles.songInfo}>
-        <Text style={styles.songTitle} numberOfLines={1}>
+        <Text
+          style={[styles.songTitle, isCurrentlyPlaying && styles.currentlyPlayingText]}
+          numberOfLines={1}
+        >
           {song.name}
         </Text>
         <Text style={styles.artistName} numberOfLines={1}>
-          {artistNames}
+          {artistNames}  |  {duration}
         </Text>
       </View>
-
-      {/* Duration */}
-      <Text style={styles.duration}>{duration}</Text>
 
       {/* Delete Button */}
       <TouchableOpacity
@@ -78,7 +78,7 @@ export const QueueItem: React.FC<QueueItemProps> = ({
         onPress={onDelete}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Ionicons name="close-circle" size={24} color={colors.error} />
+        <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -88,55 +88,40 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 64,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.medium,
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  currentlyPlaying: {
-    borderWidth: 2,
-    borderColor: colors.secondary,
+    paddingVertical: 12,
   },
   dragging: {
-    opacity: 0.7,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    opacity: 0.8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   dragHandle: {
     paddingRight: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  albumArt: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.small,
-    marginRight: spacing.sm,
+    justifyContent: 'center',
   },
   songInfo: {
     flex: 1,
-    justifyContent: 'center',
+    marginLeft: spacing.md,
     marginRight: spacing.sm,
+    justifyContent: 'center',
   },
   songTitle: {
-    ...typography.body,
-    fontWeight: '600',
+    fontSize: 14,
+    fontFamily: 'Poppins_600SemiBold',
     color: colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: 3,
+  },
+  currentlyPlayingText: {
+    color: colors.primary,
   },
   artistName: {
-    ...typography.caption,
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
-  },
-  duration: {
-    ...typography.caption,
-    color: colors.textTertiary,
-    marginRight: spacing.sm,
   },
   deleteButton: {
     padding: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: spacing.xs,
   },
 });

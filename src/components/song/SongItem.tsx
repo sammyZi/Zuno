@@ -20,7 +20,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
 import { AlbumArt } from './AlbumArt';
 
+import { useFavoritesStore } from '../../store';
+import { Song } from '../../types/api';
+
 interface SongItemProps {
+  song?: Song; // Accept full song object for easy favoring
   title: string;
   artist: string;
   duration?: string;
@@ -32,6 +36,7 @@ interface SongItemProps {
 }
 
 export const SongItem: React.FC<SongItemProps> = ({
+  song,
   title,
   artist,
   duration,
@@ -41,6 +46,9 @@ export const SongItem: React.FC<SongItemProps> = ({
   isPlaying = false,
   style,
 }) => {
+  const { isFavorite, toggleFavorite } = useFavoritesStore();
+  const isFav = song ? isFavorite(song.id) : false;
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
@@ -62,6 +70,21 @@ export const SongItem: React.FC<SongItemProps> = ({
           {artist}{duration ? `  |  ${duration}` : ''}
         </Text>
       </View>
+
+      {/* Favorite Heart */}
+      {song && (
+        <TouchableOpacity
+          style={styles.favButton}
+          onPress={() => toggleFavorite(song)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons
+            name={isFav ? 'heart' : 'heart-outline'}
+            size={20}
+            color={isFav ? colors.primary : colors.textMuted}
+          />
+        </TouchableOpacity>
+      )}
 
       {/* Orange play button */}
       <TouchableOpacity
@@ -114,6 +137,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
+  },
+  favButton: {
+    padding: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.xs,
   },
   playButton: {
     width: 32,

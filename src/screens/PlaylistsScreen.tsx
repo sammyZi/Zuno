@@ -1,192 +1,101 @@
 /**
- * Playlists Screen (Queue Management)
- * Displays and manages the playback queue with drag-and-drop reordering
+ * Playlists Screen
+ * Displays user's playlists
  */
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  Platform,
   TouchableOpacity,
-  FlatList,
 } from 'react-native';
-import DraggableFlatList, {
-  RenderItemParams,
-  ScaleDecorator,
-} from 'react-native-draggable-flatlist';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useNavigation } from '@react-navigation/native';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { spacing } from '../theme/spacing';
-import { useQueueStore } from '../store/queueStore';
-import { usePlayerStore } from '../store/playerStore';
-import { QueueItem } from '../components/queue';
-import { Song } from '../types';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, typography, spacing, borderRadius } from '../theme';
 
 export const PlaylistsScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const { queue, currentIndex, removeFromQueue, reorderQueue, clearQueue, setCurrentIndex } =
-    useQueueStore();
-  const { currentSong, play } = usePlayerStore();
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.backgroundPrimary} />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Playlists</Text>
+        <TouchableOpacity style={styles.addButton}>
+          <Ionicons name="add" size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
-  const handleDelete = useCallback(
-    (index: number) => {
-      removeFromQueue(index);
-    },
-    [removeFromQueue]
-  );
-
-  const handleSongPress = useCallback(
-    async (index: number) => {
-      setCurrentIndex(index);
-      await play(queue[index]);
-      // Navigate to player screen
-      navigation.navigate('Player' as never);
-    },
-    [queue, setCurrentIndex, play, navigation]
-  );
-
-  const handleDragEnd = useCallback(
-    ({ data, from, to }: { data: Song[]; from: number; to: number }) => {
-      if (from !== to) {
-        reorderQueue(from, to);
-      }
-    },
-    [reorderQueue]
-  );
-
-  const handleClearQueue = useCallback(() => {
-    clearQueue();
-  }, [clearQueue]);
-
-  const renderItem = useCallback(
-    ({ item, drag, isActive, getIndex }: RenderItemParams<Song>) => {
-      const isCurrentlyPlaying = currentSong?.id === item.id;
-      const index = getIndex();
-
-      return (
-        <ScaleDecorator>
-          <QueueItem
-            song={item}
-            index={index ?? 0}
-            isCurrentlyPlaying={isCurrentlyPlaying}
-            onDelete={() => handleDelete(index ?? 0)}
-            onPress={() => handleSongPress(index ?? 0)}
-            drag={drag}
-            isActive={isActive}
-          />
-        </ScaleDecorator>
-      );
-    },
-    [currentSong, handleDelete, handleSongPress]
-  );
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>Queue is Empty</Text>
-      <Text style={styles.emptySubtext}>
-        Add songs from the Home screen to start building your queue
-      </Text>
-    </View>
-  );
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <View>
-        <Text style={styles.title}>Queue</Text>
-        <Text style={styles.subtitle}>
-          {queue.length} {queue.length === 1 ? 'song' : 'songs'}
+      {/* Empty State */}
+      <View style={styles.emptyContainer}>
+        <View style={styles.emptyIconBg}>
+          <Ionicons name="albums-outline" size={64} color={colors.primary} />
+        </View>
+        <Text style={styles.emptyTitle}>No Playlists Yet</Text>
+        <Text style={styles.emptySubtitle}>
+          Create your first playlist and start adding your favorite tracks.
         </Text>
       </View>
-      {queue.length > 0 && (
-        <TouchableOpacity style={styles.clearButton} onPress={handleClearQueue}>
-          <Text style={styles.clearButtonText}>Clear Queue</Text>
-        </TouchableOpacity>
-      )}
     </View>
-  );
-
-  return (
-    <GestureHandlerRootView style={styles.gestureContainer}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.backgroundPrimary} />
-        {renderHeader()}
-        {queue.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <DraggableFlatList
-            data={queue}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            onDragEnd={handleDragEnd}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </SafeAreaView>
-    </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
-  gestureContainer: {
-    flex: 1,
-    backgroundColor: colors.backgroundPrimary,
-  },
   container: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingVertical: spacing.lg,
   },
-  title: {
-    ...typography.h2,
-    marginBottom: spacing.xs,
+  headerTitle: {
+    fontSize: 28,
+    fontFamily: 'Poppins_700Bold',
+    color: colors.textPrimary,
   },
-  subtitle: {
-    ...typography.body,
-    color: colors.textTertiary,
-  },
-  clearButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: 20,
-  },
-  clearButtonText: {
-    ...typography.body,
-    color: colors.error,
-    fontWeight: '600',
-  },
-  listContent: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: 100, // Space for tab bar + mini player
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.round,
+    backgroundColor: 'rgba(255, 140, 40, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: 100, // Space for mini player and bottom tabs
+  },
+  emptyIconBg: {
+    width: 120,
+    height: 120,
+    borderRadius: borderRadius.round,
+    backgroundColor: 'rgba(255, 140, 40, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: 100,
+    marginBottom: spacing.lg,
   },
   emptyTitle: {
-    ...typography.h2,
+    fontSize: 20,
+    fontFamily: 'Poppins_700Bold',
+    color: colors.textPrimary,
+    textAlign: 'center',
     marginBottom: spacing.sm,
   },
-  emptySubtext: {
+  emptySubtitle: {
     ...typography.body,
-    color: colors.textTertiary,
+    color: colors.textMuted,
     textAlign: 'center',
+    lineHeight: 22,
   },
 });

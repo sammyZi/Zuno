@@ -22,6 +22,7 @@ interface SearchBarProps {
   isFocused?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
+  onSubmitEditing?: () => void;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
@@ -33,6 +34,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   isFocused = false,
   onFocus,
   onBlur,
+  onSubmitEditing,
 }) => {
   const inputRef = useRef<TextInput>(null);
 
@@ -61,6 +63,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onChangeText={onChangeText}
         onFocus={onFocus}
         onBlur={onBlur}
+        onSubmitEditing={onSubmitEditing}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
