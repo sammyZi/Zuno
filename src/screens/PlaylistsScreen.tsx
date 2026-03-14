@@ -16,11 +16,14 @@ import {
   TextInput,
   Modal,
   TouchableWithoutFeedback,
+  KeyboardAvoidingView,
 } from 'react-native';
+import Animated, { FadeIn, FadeInDown, SlideInDown } from 'react-native-reanimated';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { usePlaylistStore, Playlist } from '../store/playlistStore';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
@@ -113,73 +116,130 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
         <TouchableWithoutFeedback onPress={() => setShowCreateModal(false)}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
-              <View style={styles.modalContainer}>
-                {/* Icon */}
-                <View style={styles.modalIconContainer}>
-                  <View style={styles.modalIconBg}>
-                    <Ionicons name="musical-notes" size={32} color={colors.primary} />
+              <Animated.View 
+                entering={SlideInDown.duration(300).springify()}
+                style={styles.modalContainer}
+              >
+                {/* Close Button */}
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setShowCreateModal(false);
+                    setNewPlaylistName('');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={24} color={colors.textMuted} />
+                </TouchableOpacity>
+
+                  {/* Icon with Gradient */}
+                  <View style={styles.modalIconContainer}>
+                    <LinearGradient
+                      colors={[colors.primary, '#FF6B35']}
+                      style={styles.modalIconBg}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Ionicons name="albums" size={36} color={colors.backgroundPrimary} />
+                    </LinearGradient>
                   </View>
-                </View>
 
-                {/* Title */}
-                <Text style={styles.modalTitle}>Create Playlist</Text>
-                <Text style={styles.modalSubtitle}>
-                  Give your playlist a name to get started
-                </Text>
+                  {/* Title */}
+                  <Text style={styles.modalTitle}>Create New Playlist</Text>
+                  <Text style={styles.modalSubtitle}>
+                    Give your playlist a unique name
+                  </Text>
 
-                {/* Input */}
-                <TextInput
-                  style={styles.input}
-                  placeholder="My Awesome Playlist"
-                  placeholderTextColor={colors.textMuted}
-                  value={newPlaylistName}
-                  onChangeText={setNewPlaylistName}
-                  autoFocus
-                  maxLength={50}
-                />
-                <Text style={styles.charCount}>
-                  {newPlaylistName.length}/50
-                </Text>
+                  {/* Input Container */}
+                  <View style={styles.inputContainer}>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons 
+                        name="musical-note-outline" 
+                        size={20} 
+                        color={colors.textMuted} 
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="e.g., Workout Mix, Chill Vibes..."
+                        placeholderTextColor={colors.textMuted}
+                        value={newPlaylistName}
+                        onChangeText={setNewPlaylistName}
+                        autoFocus
+                        maxLength={50}
+                      />
+                      {newPlaylistName.length > 0 && (
+                        <TouchableOpacity
+                          onPress={() => setNewPlaylistName('')}
+                          style={styles.clearButton}
+                        >
+                          <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <View style={styles.inputFooter}>
+                      <Text style={styles.inputHint}>
+                        <Ionicons name="information-circle-outline" size={12} color={colors.textMuted} />
+                        {' '}Choose a memorable name
+                      </Text>
+                      <Text style={styles.charCount}>
+                        {newPlaylistName.length}/50
+                      </Text>
+                    </View>
+                  </View>
 
-                {/* Actions */}
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelModalButton]}
-                    onPress={() => {
-                      setShowCreateModal(false);
-                      setNewPlaylistName('');
-                    }}
-                  >
-                    <Text style={styles.cancelModalButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalButton,
-                      styles.createModalButton,
-                      !newPlaylistName.trim() && styles.createModalButtonDisabled,
-                    ]}
-                    onPress={handleCreatePlaylist}
-                    disabled={!newPlaylistName.trim()}
-                  >
-                    <Ionicons 
-                      name="checkmark" 
-                      size={18} 
-                      color={newPlaylistName.trim() ? colors.backgroundPrimary : colors.textMuted} 
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={[
-                      styles.createModalButtonText,
-                      !newPlaylistName.trim() && styles.createModalButtonTextDisabled,
-                    ]}>
-                      Create
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+                  {/* Actions */}
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.cancelModalButton]}
+                      onPress={() => {
+                        setShowCreateModal(false);
+                        setNewPlaylistName('');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.cancelModalButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.modalButton,
+                        styles.createModalButton,
+                        !newPlaylistName.trim() && styles.createModalButtonDisabled,
+                      ]}
+                      onPress={handleCreatePlaylist}
+                      disabled={!newPlaylistName.trim()}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={
+                          newPlaylistName.trim()
+                            ? [colors.primary, '#FF6B35']
+                            : [colors.backgroundTertiary, colors.backgroundTertiary]
+                        }
+                        style={styles.createButtonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Ionicons 
+                          name="add-circle" 
+                          size={20} 
+                          color={newPlaylistName.trim() ? colors.backgroundPrimary : colors.textMuted} 
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text style={[
+                          styles.createModalButtonText,
+                          !newPlaylistName.trim() && styles.createModalButtonTextDisabled,
+                        ]}>
+                          Create
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                </Animated.View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
     </View>
   );
 };
@@ -275,97 +335,153 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: spacing.md,
   },
   modalContainer: {
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.large,
+    borderRadius: borderRadius.xlarge,
     padding: spacing.xl,
-    width: '85%',
-    maxWidth: 400,
-    alignItems: 'center',
+    width: '100%',
+    maxWidth: 420,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  modalIconContainer: {
-    marginBottom: spacing.md,
-  },
-  modalIconBg: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 140, 40, 0.15)',
+  closeButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.backgroundTertiary,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
+  },
+  modalIconContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalIconBg: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontFamily: 'Poppins_700Bold',
     color: colors.textPrimary,
     marginBottom: spacing.xs,
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  input: {
+  inputContainer: {
     width: '100%',
+    marginBottom: spacing.lg,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.backgroundTertiary,
     borderRadius: borderRadius.medium,
-    padding: spacing.md,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 140, 40, 0.2)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  inputIcon: {
+    marginRight: spacing.sm,
+  },
+  input: {
+    flex: 1,
     color: colors.textPrimary,
     fontFamily: 'Poppins_500Medium',
     fontSize: 15,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 140, 40, 0.3)',
-    textAlign: 'center',
+    paddingVertical: spacing.sm,
   },
-  charCount: {
+  clearButton: {
+    padding: spacing.xs,
+  },
+  inputFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  inputHint: {
     fontSize: 11,
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-    alignSelf: 'flex-end',
+  },
+  charCount: {
+    fontSize: 11,
+    fontFamily: 'Poppins_600SemiBold',
+    color: colors.textMuted,
   },
   modalActions: {
     flexDirection: 'row',
     width: '100%',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: spacing.md,
+    height: 52,
     borderRadius: borderRadius.medium,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
+    overflow: 'hidden',
   },
   cancelModalButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.backgroundTertiary,
     borderWidth: 1.5,
-    borderColor: colors.textMuted,
+    borderColor: colors.textMuted + '40',
   },
   cancelModalButtonText: {
     fontSize: 15,
     fontFamily: 'Poppins_600SemiBold',
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   createModalButton: {
-    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   createModalButtonDisabled: {
-    backgroundColor: colors.backgroundTertiary,
-    opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  createButtonGradient: {
+    width: '100%',
+    height: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
   createModalButtonText: {
     fontSize: 15,
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Poppins_700Bold',
     color: colors.backgroundPrimary,
   },
   createModalButtonTextDisabled: {

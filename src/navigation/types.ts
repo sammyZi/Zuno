@@ -30,6 +30,7 @@ export type RootStackParamList = {
   Search: undefined;
   Artist: {
     artistId: string;
+    artistName?: string;
   };
   Album: {
     albumId: string;

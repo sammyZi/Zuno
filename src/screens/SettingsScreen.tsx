@@ -110,7 +110,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Audio Quality Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="musical-notes" size={18} color={colors.secondary} />
+            <Ionicons name="musical-notes" size={18} color={colors.primary} />
             <Text style={styles.sectionTitle}>AUDIO QUALITY</Text>
           </View>
           
@@ -121,8 +121,8 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '15' }]}>
-                  <Ionicons name="musical-note" size={20} color={colors.secondary} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="musical-note" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Standard Quality</Text>
@@ -131,7 +131,7 @@ export const SettingsScreen: React.FC = () => {
               </View>
               {audioQuality === '96kbps' && (
                 <View style={styles.checkmarkContainer}>
-                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -144,8 +144,8 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '15' }]}>
-                  <Ionicons name="musical-notes" size={20} color={colors.secondary} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="musical-notes" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Good Quality</Text>
@@ -154,7 +154,7 @@ export const SettingsScreen: React.FC = () => {
               </View>
               {audioQuality === '160kbps' && (
                 <View style={styles.checkmarkContainer}>
-                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -167,8 +167,8 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '15' }]}>
-                  <Ionicons name="headset" size={20} color={colors.secondary} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="headset" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>High Quality</Text>
@@ -177,7 +177,7 @@ export const SettingsScreen: React.FC = () => {
               </View>
               {audioQuality === '320kbps' && (
                 <View style={styles.checkmarkContainer}>
-                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -198,8 +198,8 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.info + '40' }]}>
-                  <Ionicons name="wifi" size={20} color={colors.secondary} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="wifi" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>WiFi Only</Text>
@@ -208,7 +208,7 @@ export const SettingsScreen: React.FC = () => {
               </View>
               {downloadPreference === 'wifi-only' && (
                 <View style={styles.checkmarkContainer}>
-                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -221,8 +221,8 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.info + '40' }]}>
-                  <Ionicons name="cellular" size={20} color={colors.secondary} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="cellular" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Mobile Data Allowed</Text>
@@ -231,7 +231,7 @@ export const SettingsScreen: React.FC = () => {
               </View>
               {downloadPreference === 'mobile-allowed' && (
                 <View style={styles.checkmarkContainer}>
-                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -241,15 +241,15 @@ export const SettingsScreen: React.FC = () => {
         {/* Storage Management Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="folder-open" size={18} color={colors.warning} />
+            <Ionicons name="folder-open" size={18} color={colors.primary} />
             <Text style={styles.sectionTitle}>STORAGE</Text>
           </View>
           
           <View style={styles.card}>
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.warning + '15' }]}>
-                  <Ionicons name="save" size={20} color={colors.warning} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="save" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Downloaded Songs</Text>
@@ -270,11 +270,11 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.error + '15' }]}>
-                  <Ionicons name="trash-outline" size={20} color={colors.error} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.textMuted + '20' }]}>
+                  <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={[styles.settingLabel, { color: colors.error }]}>
+                  <Text style={[styles.settingLabel, { color: colors.textSecondary }]}>
                     {isClearing ? 'Clearing...' : 'Clear Cache'}
                   </Text>
                   <Text style={styles.settingDescription}>
@@ -297,7 +297,7 @@ export const SettingsScreen: React.FC = () => {
           <View style={styles.card}>
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
                   <Ionicons name="phone-portrait-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
@@ -311,8 +311,8 @@ export const SettingsScreen: React.FC = () => {
 
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '15' }]}>
-                  <Ionicons name="code-slash-outline" size={20} color={colors.secondary} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="code-slash-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Built With</Text>
@@ -327,8 +327,8 @@ export const SettingsScreen: React.FC = () => {
 
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.warning + '15' }]}>
-                  <Ionicons name="musical-note-outline" size={20} color={colors.warning} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="musical-note-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Music API</Text>
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     fontFamily: 'Poppins_600SemiBold',
-    color: colors.secondary,
+    color: colors.primary,
   },
   divider: {
     height: 1,

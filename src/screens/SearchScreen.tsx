@@ -140,7 +140,10 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
     if (searchQuery.trim().length > 0) {
       addRecentSearch(searchQuery.trim());
     }
-    navigation.navigate('Artist', { artistId: artist.id });
+    navigation.navigate('Artist', { 
+      artistId: artist.id,
+      artistName: artist.name 
+    });
   };
 
   const handleAlbumPress = (album: Album) => {

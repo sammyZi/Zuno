@@ -13,6 +13,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, {
@@ -44,8 +45,20 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
-  // Convert queue to items with indices
-  const queueItems: QueueItem[] = queue.map((song, index) => ({ song, index }));
+  // Convert queue to items with indices, filter out any invalid songs
+  const queueItems: QueueItem[] = queue
+    .map((song, index) => ({ song, index }))
+    .filter(item => item.song && item.song.id); // Filter out undefined/null songs
+  
+  // Log queue state for debugging
+  useEffect(() => {
+    console.log('[QueueScreen] Queue length:', queue.length);
+    console.log('[QueueScreen] Current index:', currentIndex);
+    console.log('[QueueScreen] Valid queue items:', queueItems.length);
+    if (queue.length > 0 && queueItems.length === 0) {
+      console.error('[QueueScreen] All queue items are invalid!', queue);
+    }
+  }, [queue.length, currentIndex]);
 
   // Fetch recommended songs based on current song from API
   useEffect(() => {
@@ -64,11 +77,24 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
         } finally {
           setLoadingRecommendations(false);
         }
+      } else if (queue.length === 0) {
+        // If queue is empty and no current song, fetch trending songs
+        setLoadingRecommendations(true);
+        try {
+          const { searchSongs } = await import('../services/api');
+          const response = await searchSongs('trending', 1, 10);
+          setRecommendedSongs(response.data.results.slice(0, 5));
+        } catch (error) {
+          console.error('Failed to fetch trending songs:', error);
+          setRecommendedSongs([]);
+        } finally {
+          setLoadingRecommendations(false);
+        }
       }
     };
 
     fetchRecommendations();
-  }, [currentSong?.id]); // Only re-fetch when current song changes
+  }, [currentSong?.id, queue.length]); // Re-fetch when current song changes or queue becomes empty
 
   const handlePlaySong = (song: Song, index: number) => {
     useQueueStore.getState().setCurrentIndex(index);
@@ -119,6 +145,13 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderQueueItem = ({ item, drag, isActive }: RenderItemParams<QueueItem>) => {
     const { song, index } = item;
+    
+    // Defensive check - skip if song is undefined
+    if (!song || !song.id) {
+      console.warn('[QueueScreen] Skipping undefined song at index', index);
+      return null;
+    }
+    
     const imageUrl = getImageUrl(song.image, '150x150');
     const artistNames = getArtistNames(song);
     const isCurrentSong = currentSong?.id === song.id;
@@ -249,7 +282,7 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
           <DraggableFlatList
             data={queueItems}
             renderItem={renderQueueItem}
-            keyExtractor={(item) => `${item.song.id}-${item.index}`}
+            keyExtractor={(item) => `queue-${item.song?.id || 'unknown'}-${item.index}`}
             onDragEnd={handleDragEnd}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -317,15 +350,80 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
           />
         </>
       ) : (
-        <Animated.View entering={FadeInUp.duration(400)} style={styles.emptyContainer}>
-          <View style={styles.emptyIconBg}>
-            <Ionicons name="list-outline" size={48} color={colors.primary} />
-          </View>
-          <Text style={styles.emptyText}>Queue is empty</Text>
-          <Text style={styles.emptySubtext}>
-            Play a song to start building your queue
-          </Text>
-        </Animated.View>
+        <ScrollView 
+          contentContainerStyle={styles.emptyScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View entering={FadeInUp.duration(400)} style={styles.emptyContainer}>
+            <View style={styles.emptyIconBg}>
+              <Ionicons name="list-outline" size={48} color={colors.primary} />
+            </View>
+            <Text style={styles.emptyText}>Queue is empty</Text>
+            <Text style={styles.emptySubtext}>
+              Play a song to start building your queue
+            </Text>
+          </Animated.View>
+
+          {/* Show recommendations even when queue is empty */}
+          {(recommendedSongs.length > 0 || loadingRecommendations) && (
+            <Animated.View entering={FadeInUp.delay(200)} style={styles.recommendedSection}>
+              <View style={styles.recommendedHeader}>
+                <Ionicons name="sparkles" size={18} color={colors.primary} />
+                <Text style={styles.recommendedTitle}>Recommended for You</Text>
+              </View>
+              {loadingRecommendations ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.loadingText}>Finding similar songs...</Text>
+                </View>
+              ) : (
+                recommendedSongs.map((song, index) => {
+                  const imageUrl = getImageUrl(song.image, '150x150');
+                  const artistNames = getArtistNames(song);
+                  return (
+                    <Animated.View
+                      key={`recommended-empty-${song.id}-${index}`}
+                      entering={FadeInUp.delay(300 + index * 50).springify()}
+                      style={styles.recommendedItem}
+                    >
+                      <TouchableOpacity
+                        style={styles.recommendedItemContent}
+                        onPress={() => handlePlaySong(song, 0)}
+                        activeOpacity={0.7}
+                      >
+                        {imageUrl ? (
+                          <Image 
+                            source={{ uri: imageUrl }} 
+                            style={styles.recommendedAlbumArt}
+                          />
+                        ) : (
+                          <View style={[styles.recommendedAlbumArt, styles.albumArtPlaceholder]}>
+                            <Ionicons name="musical-notes" size={20} color={colors.textMuted} />
+                          </View>
+                        )}
+                        <View style={styles.recommendedSongInfo}>
+                          <Text style={styles.recommendedSongTitle} numberOfLines={1}>
+                            {song.name}
+                          </Text>
+                          <Text style={styles.recommendedArtistName} numberOfLines={1}>
+                            {artistNames}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.addButton}
+                          onPress={() => handleAddRecommended(song)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons name="add-circle" size={28} color={colors.primary} />
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                })
+              )}
+            </Animated.View>
+          )}
+        </ScrollView>
       )}
     </GestureHandlerRootView>
   );
@@ -354,6 +452,7 @@ const styles = StyleSheet.create({
   headerTitleContainer: {
     flex: 1,
     alignItems: 'center',
+    paddingTop:12,
   },
   headerTitle: {
     fontSize: 18,
@@ -502,6 +601,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingBottom: 100,
+  },
+  emptyScrollContent: {
+    flexGrow: 1,
     paddingBottom: 100,
   },
   emptyIconBg: {

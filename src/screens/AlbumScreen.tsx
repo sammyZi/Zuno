@@ -27,7 +27,7 @@ import type { RootStackParamList } from '../navigation/types';
 import type { Song } from '../types/api';
 import { colors, spacing, borderRadius, typography } from '../theme';
 import { SongItem } from '../components/song';
-import { searchSongs } from '../services/api';
+import { searchSongs, getAlbumById } from '../services/api';
 import { getImageUrl, formatDuration, getArtistNames } from '../utils/audio';
 import { usePlayerStore, useQueueStore } from '../store';
 
@@ -45,20 +45,34 @@ export const AlbumScreen: React.FC<Props> = ({ route, navigation }) => {
 
   useEffect(() => {
     loadAlbumData();
-  }, []);
+  }, [route.params.albumId]);
 
   const loadAlbumData = async () => {
     try {
-      const response = await searchSongs('latest', 1, 8);
-      const results = response.data.results;
-      setSongs(results);
-      if (results.length > 0) {
-        setAlbumName(results[0].album?.name || 'Album');
-        setAlbumImage(getImageUrl(results[0].image, '500x500'));
-        setAlbumArtist(getArtistNames(results[0]));
-      }
+      setLoading(true);
+      // Fetch album details using the albumId from route params
+      const albumData = await getAlbumById(route.params.albumId);
+      const album = albumData.data;
+      
+      setSongs(album.songs || []);
+      setAlbumName(album.name || 'Album');
+      setAlbumImage(getImageUrl(album.image, '500x500'));
+      setAlbumArtist(album.primaryArtists || 'Unknown Artist');
     } catch (error) {
       console.error('Error loading album:', error);
+      // Fallback to search if album API fails
+      try {
+        const response = await searchSongs(route.params.albumId, 1, 20);
+        const results = response.data.results;
+        setSongs(results);
+        if (results.length > 0) {
+          setAlbumName(results[0].album?.name || 'Album');
+          setAlbumImage(getImageUrl(results[0].image, '500x500'));
+          setAlbumArtist(getArtistNames(results[0]));
+        }
+      } catch (fallbackError) {
+        console.error('Fallback search also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }

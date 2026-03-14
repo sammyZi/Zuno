@@ -44,15 +44,34 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
 
   useEffect(() => {
     loadArtistData();
-  }, []);
+  }, [route.params.artistId]);
 
   const loadArtistData = async () => {
     try {
-      const response = await searchSongs('popular', 1, 8);
-      const results = response.data.results;
+      setLoading(true);
+      
+      // If we have the artist name from navigation, use it directly
+      const artistNameFromParams = route.params.artistName;
+      if (artistNameFromParams) {
+        setArtistName(artistNameFromParams);
+      }
+      
+      // Skip the artist API since it's unreliable (returns 500 errors)
+      // Go straight to search which works reliably
+      const searchQuery = artistNameFromParams || route.params.artistId;
+      console.log('Searching for artist songs:', searchQuery);
+      
+      const searchResponse = await searchSongs(searchQuery, 1, 20);
+      const results = searchResponse.data.results;
+      console.log('Search returned:', results?.length || 0, 'songs');
+      
       setSongs(results);
+      
+      // Extract artist info from first song if we don't have it
       if (results.length > 0) {
-        setArtistName(getArtistNames(results[0]));
+        if (!artistNameFromParams) {
+          setArtistName(getArtistNames(results[0]));
+        }
         setArtistImage(getImageUrl(results[0].image, '500x500'));
       }
     } catch (error) {
@@ -66,6 +85,24 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
     playAndBuildQueue(song, songs);
     play(song);
     navigation.navigate('Player', { song });
+  };
+
+  const handlePlayAll = () => {
+    if (songs.length > 0) {
+      playAndBuildQueue(songs[0], songs);
+      play(songs[0]);
+      navigation.navigate('Player', { song: songs[0] });
+    }
+  };
+
+  const handleShufflePlay = () => {
+    if (songs.length > 0) {
+      // Shuffle the songs array
+      const shuffledSongs = [...songs].sort(() => Math.random() - 0.5);
+      playAndBuildQueue(shuffledSongs[0], shuffledSongs);
+      play(shuffledSongs[0]);
+      navigation.navigate('Player', { song: shuffledSongs[0] });
+    }
   };
 
   if (loading) {

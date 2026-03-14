@@ -45,7 +45,7 @@ export const searchArtists = async (
  */
 export const getArtistById = async (id: string): Promise<Artist> => {
   const response = await apiClient.get<{ success: boolean; data: Artist }>(
-    ENDPOINTS.GET_ARTIST_BY_ID(id)
+    ENDPOINTS.GET_ARTIST_DETAILS(id)
   );
   return response.data.data;
 };
@@ -62,13 +62,40 @@ export const getArtistSongs = async (
   page: number = 1,
   limit: number = 20
 ): Promise<Song[]> => {
-  const response = await apiClient.get<{ success: boolean; data: { songs: Song[] } }>(
-    ENDPOINTS.GET_ARTIST_SONGS(id),
-    {
-      params: { page, limit },
+  try {
+    const response = await apiClient.get(
+      ENDPOINTS.GET_ARTIST_SONGS(id),
+      {
+        params: { page, sortBy: 'popularity', sortOrder: 'desc' },
+      }
+    );
+    
+    console.log('Artist songs API response:', JSON.stringify(response.data).substring(0, 200));
+    
+    // Try different possible response formats
+    if (response.data?.data?.topSongs && Array.isArray(response.data.data.topSongs)) {
+      console.log('Found topSongs:', response.data.data.topSongs.length);
+      return response.data.data.topSongs;
+    } else if (response.data?.data?.results) {
+      return response.data.data.results;
+    } else if (response.data?.data?.songs) {
+      return response.data.data.songs;
+    } else if (response.data?.results) {
+      return response.data.results;
+    } else if (response.data?.songs) {
+      return response.data.songs;
+    } else if (Array.isArray(response.data?.data)) {
+      return response.data.data;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
     }
-  );
-  return response.data.data.songs;
+    
+    console.warn('Unexpected artist songs response format:', response.data);
+    return [];
+  } catch (error) {
+    console.error('Error in getArtistSongs:', error);
+    throw error;
+  }
 };
 
 /**

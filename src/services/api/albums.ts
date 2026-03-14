@@ -5,7 +5,7 @@
 
 import apiClient from './client';
 import { ENDPOINTS } from './endpoints';
-import type { SearchResponse, Album } from '../../types/api';
+import type { SearchResponse, Album, Song } from '../../types/api';
 
 /**
  * Search albums by query
@@ -24,6 +24,18 @@ export const searchAlbums = async (
     {
       params: { query, page, limit },
     }
+  );
+  return response.data;
+};
+
+/**
+ * Get album details by ID
+ * @param id - Album ID
+ * @returns Promise with album details including songs
+ */
+export const getAlbumById = async (id: string): Promise<{ data: Album & { songs: Song[] } }> => {
+  const response = await apiClient.get<{ data: Album & { songs: Song[] } }>(
+    ENDPOINTS.GET_ALBUM_DETAILS(id)
   );
   return response.data;
 };

@@ -5,8 +5,6 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Song } from '../types';
 
 export type RepeatMode = 'off' | 'all' | 'one';
@@ -37,22 +35,33 @@ interface QueueState {
   autoPopulateFromSuggestions: (songId: string) => Promise<void>;
 }
 
-export const useQueueStore = create<QueueState>()(
-  persist(
-    (set, get) => ({
-      // Initial state
-      queue: [],
-      currentIndex: -1,
-      shuffle: false,
-      repeat: 'off',
-      originalQueue: [],
-      isLoadingSuggestions: false,
-      manuallyAddedIndices: [],
+export const useQueueStore = create<QueueState>()((set, get) => ({
+  // Initial state
+  queue: [],
+  currentIndex: -1,
+  shuffle: false,
+  repeat: 'off',
+  originalQueue: [],
+  isLoadingSuggestions: false,
+  manuallyAddedIndices: [],
 
       // Actions
       addToQueue: (song, isManual = false) =>
         set((state) => {
           const songs = Array.isArray(song) ? song : [song];
+          
+          // Validate songs - filter out any undefined/null/invalid songs
+          const validSongs = songs.filter(s => s && s.id && s.name);
+          
+          if (validSongs.length === 0) {
+            console.warn('[QueueStore] Attempted to add invalid songs to queue');
+            return state; // Return unchanged state
+          }
+          
+          if (validSongs.length < songs.length) {
+            console.warn('[QueueStore] Filtered out', songs.length - validSongs.length, 'invalid songs');
+          }
+          
           let newQueue = [...state.queue];
           let insertIndex: number;
           let newManualIndices = [...state.manuallyAddedIndices];
@@ -69,26 +78,26 @@ export const useQueueStore = create<QueueState>()(
             }
 
             // Insert songs at the calculated position
-            newQueue.splice(insertIndex, 0, ...songs);
+            newQueue.splice(insertIndex, 0, ...validSongs);
 
             // Update manual indices (shift existing indices if needed)
             newManualIndices = newManualIndices.map(idx => 
-              idx >= insertIndex ? idx + songs.length : idx
+              idx >= insertIndex ? idx + validSongs.length : idx
             );
             
             // Add new manual indices
-            for (let i = 0; i < songs.length; i++) {
+            for (let i = 0; i < validSongs.length; i++) {
               newManualIndices.push(insertIndex + i);
             }
           } else {
             // Auto-added songs: append to end
-            newQueue = [...state.queue, ...songs];
+            newQueue = [...state.queue, ...validSongs];
           }
 
           return {
             queue: newQueue,
             manuallyAddedIndices: newManualIndices,
-            originalQueue: state.shuffle ? [...state.originalQueue, ...songs] : newQueue,
+            originalQueue: state.shuffle ? [...state.originalQueue, ...validSongs] : newQueue,
           };
         }),
 
@@ -342,19 +351,4 @@ export const useQueueStore = create<QueueState>()(
           set({ isLoadingSuggestions: false });
         }
       },
-    }),
-    {
-      name: 'queue-storage',
-      storage: createJSONStorage(() => AsyncStorage),
-      // Only persist these fields
-      partialize: (state) => ({
-        queue: state.queue,
-        currentIndex: state.currentIndex,
-        shuffle: state.shuffle,
-        repeat: state.repeat,
-        originalQueue: state.originalQueue,
-        manuallyAddedIndices: state.manuallyAddedIndices,
-      }),
-    }
-  )
-);
+    }));

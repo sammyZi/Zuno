@@ -297,7 +297,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleArtistPress = (artist: Artist) => {
-    navigation.navigate('Artist', { artistId: artist.id });
+    navigation.navigate('Artist', { 
+      artistId: artist.id,
+      artistName: artist.name 
+    });
   };
 
   const handleAlbumPress = (album: Album) => {
@@ -772,7 +775,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <FlatList
       key="albums-grid"
       data={albums}
-      keyExtractor={(item, index) => `album-${item.id}-${index}`}
+      keyExtractor={(item) => item.id}
       numColumns={2}
       ListHeaderComponent={renderAlbumsHeader}
       columnWrapperStyle={styles.albumRow}
@@ -808,7 +811,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               {item.primaryArtists || 'Unknown'}  |  {item.year || '2023'}
             </Text>
             <Text style={styles.albumGridSongCount}>
-              {item.songCount || '10'} songs
+              {item.songCount || 0} {item.songCount === 1 ? 'song' : 'songs'}
             </Text>
           </TouchableOpacity>
         );

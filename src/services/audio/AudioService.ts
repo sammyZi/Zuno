@@ -177,6 +177,12 @@ class AudioServiceClass {
         
         await this.sound.playAsync();
         this.playbackStatus = 'playing';
+        
+        // Update notification
+        if (this.currentSong) {
+          await NotificationService.updateNotification(this.currentSong, true, this.sound);
+        }
+        
         console.log('[AudioService] Playback started');
         
         // Update notification

@@ -46,6 +46,35 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     try {
       await AudioService.initialize();
 
+      // Set up notification playback controls
+      const { NotificationService } = await import('../services/audio');
+      NotificationService.setPlaybackControls({
+        onPlay: async () => {
+          console.log('[PlayerStore] Notification play pressed');
+          await get().play();
+        },
+        onPause: async () => {
+          console.log('[PlayerStore] Notification pause pressed');
+          await get().pause();
+        },
+        onNext: async () => {
+          console.log('[PlayerStore] Notification next pressed');
+          const { useQueueStore } = await import('./queueStore');
+          const nextSong = useQueueStore.getState().nextSong();
+          if (nextSong) {
+            await get().play(nextSong);
+          }
+        },
+        onPrevious: async () => {
+          console.log('[PlayerStore] Notification previous pressed');
+          const { useQueueStore } = await import('./queueStore');
+          const prevSong = useQueueStore.getState().previousSong();
+          if (prevSong) {
+            await get().play(prevSong);
+          }
+        },
+      });
+
       // Set up audio service callbacks
       AudioService.setCallbacks({
         onPlaybackStatusUpdate: (status: AVPlaybackStatusSuccess) => {

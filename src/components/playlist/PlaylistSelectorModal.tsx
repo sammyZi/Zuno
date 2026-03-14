@@ -16,7 +16,10 @@ import {
   TextInput,
   Image,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -439,8 +442,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.backgroundTertiary,
     borderRadius: borderRadius.medium,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 140, 40, 0.3)',
     minHeight: 48,
   },
   inputIcon: {
