@@ -16,7 +16,6 @@ interface QueueState {
   shuffle: boolean;
   repeat: RepeatMode;
   originalQueue: Song[]; // Store original order for shuffle
-  isLoadingSuggestions: boolean;
   manuallyAddedIndices: number[]; // Track indices of manually added songs
 
   // Actions
@@ -32,7 +31,6 @@ interface QueueState {
   resetQueue: () => void;
   setQueue: (songs: Song[], startIndex?: number) => void;
   playAndBuildQueue: (song: Song, contextSongs?: Song[]) => void;
-  autoPopulateFromSuggestions: (songId: string) => Promise<void>;
 }
 
 export const useQueueStore = create<QueueState>()((set, get) => ({
@@ -42,7 +40,6 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
   shuffle: false,
   repeat: 'off',
   originalQueue: [],
-  isLoadingSuggestions: false,
   manuallyAddedIndices: [],
 
       // Actions
@@ -90,7 +87,7 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
               newManualIndices.push(insertIndex + i);
             }
           } else {
-            // Auto-added songs: append to end
+            // Auto-added songs (from context/albums): append to end
             newQueue = [...state.queue, ...validSongs];
           }
 
@@ -132,6 +129,7 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
           const [movedItem] = newQueue.splice(fromIndex, 1);
           newQueue.splice(toIndex, 0, movedItem);
 
+          // Update current index if needed
           let newIndex = state.currentIndex;
           if (state.currentIndex === fromIndex) {
             newIndex = toIndex;
@@ -141,9 +139,18 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
             newIndex = state.currentIndex + 1;
           }
 
+          // Update manual indices
+          const newManualIndices = state.manuallyAddedIndices.map(idx => {
+            if (idx === fromIndex) return toIndex;
+            if (fromIndex < idx && toIndex >= idx) return idx - 1;
+            if (fromIndex > idx && toIndex <= idx) return idx + 1;
+            return idx;
+          });
+
           return {
             queue: newQueue,
             currentIndex: newIndex,
+            manuallyAddedIndices: newManualIndices,
             originalQueue: state.shuffle ? state.originalQueue : newQueue,
           };
         }),
@@ -152,10 +159,13 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
         const state = get();
         const { queue, currentIndex, repeat } = state;
 
+        console.log('[QueueStore] nextSong called - repeat:', repeat, 'currentIndex:', currentIndex, 'queueLength:', queue.length);
+
         if (queue.length === 0) return null;
 
         // Repeat one - return current song
         if (repeat === 'one') {
+          console.log('[QueueStore] Repeat one - returning current song:', queue[currentIndex]?.name);
           return queue[currentIndex] || null;
         }
 
@@ -166,14 +176,17 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
         if (nextIndex >= queue.length) {
           // Repeat all - go to start
           if (repeat === 'all') {
+            console.log('[QueueStore] Repeat all - going to start');
             set({ currentIndex: 0 });
             return queue[0];
           }
-          // No repeat - return null to trigger auto-populate
+          // No repeat - return null
+          console.log('[QueueStore] No repeat - queue ended');
           return null;
         }
 
         // Normal next
+        console.log('[QueueStore] Normal next - moving to index:', nextIndex);
         set({ currentIndex: nextIndex });
         return queue[nextIndex];
       },
@@ -290,7 +303,7 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
        * Play a song and build a queue from context.
        * If contextSongs is provided (e.g. from a list, album, search results),
        * sets the full list as the queue.
-       * If no context, sets just the played song and auto-populates suggestions.
+       * If no context, sets just the played song without auto-populating.
        */
       playAndBuildQueue: (song, contextSongs) => {
         if (contextSongs && contextSongs.length > 0) {
@@ -303,52 +316,13 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
             shuffle: false,
           });
         } else {
-          // Single song — set it as queue, then auto-populate
+          // Single song — set it as queue only
           set({
             queue: [song],
             currentIndex: 0,
             originalQueue: [song],
             shuffle: false,
           });
-
-          // Auto-populate suggestions in the background
-          get().autoPopulateFromSuggestions(song.id);
-        }
-      },
-
-      /**
-       * Fetch song suggestions from the API and append to queue.
-       * Deduplicates against existing queue songs.
-       */
-      autoPopulateFromSuggestions: async (songId) => {
-        const state = get();
-        if (state.isLoadingSuggestions) return;
-
-        set({ isLoadingSuggestions: true });
-
-        try {
-          // Dynamic import to avoid circular deps
-          const { getSongSuggestions } = await import('../services/api/songs');
-          const suggestions = await getSongSuggestions(songId, 15);
-
-          if (suggestions && suggestions.length > 0) {
-            const currentState = get();
-            const existingIds = new Set(currentState.queue.map((s) => s.id));
-            const newSongs = suggestions.filter((s) => !existingIds.has(s.id));
-
-            if (newSongs.length > 0) {
-              const updatedQueue = [...currentState.queue, ...newSongs];
-              set({
-                queue: updatedQueue,
-                originalQueue: currentState.shuffle ? currentState.originalQueue : updatedQueue,
-              });
-              console.log(`[QueueStore] Auto-populated ${newSongs.length} suggestions`);
-            }
-          }
-        } catch (error) {
-          console.warn('[QueueStore] Failed to fetch suggestions:', error);
-        } finally {
-          set({ isLoadingSuggestions: false });
         }
       },
     }));

@@ -3,7 +3,7 @@
  * Shows current playback queue with drag-to-reorder functionality
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, {
@@ -27,7 +25,6 @@ import { colors, spacing, borderRadius } from '../theme';
 import { useQueueStore } from '../store/queueStore';
 import { usePlayerStore } from '../store/playerStore';
 import { getImageUrl, getArtistNames } from '../utils/audio';
-import { getSongSuggestions } from '../services/api/songs';
 import type { Song } from '../types/api';
 
 type Props = StackScreenProps<RootStackParamList, 'Queue'>;
@@ -39,11 +36,9 @@ interface QueueItem {
 
 export const QueueScreen: React.FC<Props> = ({ navigation }) => {
   const { queue, currentIndex, removeFromQueue, reorderQueue, clearQueue } = useQueueStore();
-  const { currentSong, play, isPlaying } = usePlayerStore();
-  const [isReordering, setIsReordering] = useState(false);
-  const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const { currentSong, play } = usePlayerStore();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   // Force refresh when current song or index changes
   useEffect(() => {
@@ -51,36 +46,12 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
   }, [currentSong?.id, currentIndex]);
 
   // Convert queue to items with indices, filter out any invalid songs
-  const queueItems: QueueItem[] = queue
-    .map((song, index) => ({ song, index }))
-    .filter(item => item.song && item.song.id); // Filter out undefined/null songs
-
-  // Fetch recommended songs based on current song
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      // Fetch if we have a valid current song
-      if (currentSong && currentSong.id) {
-        setLoadingRecommendations(true);
-        try {
-          const suggestions = await getSongSuggestions(currentSong.id, 10);
-          // Filter out songs already in queue
-          const queueIds = new Set(queue.map(s => s.id));
-          const filtered = suggestions.filter(song => !queueIds.has(song.id)).slice(0, 5);
-          setRecommendedSongs(filtered);
-        } catch (error) {
-          console.warn('[QueueScreen] Failed to fetch recommendations');
-          setRecommendedSongs([]);
-        } finally {
-          setLoadingRecommendations(false);
-        }
-      } else {
-        setRecommendedSongs([]);
-        setLoadingRecommendations(false);
-      }
-    };
-
-    fetchRecommendations();
-  }, [currentSong?.id, queue.length]); // Re-fetch when current song changes
+  const queueItems: QueueItem[] = useMemo(() => 
+    queue
+      .map((song, index) => ({ song, index }))
+      .filter(item => item.song && item.song.id),
+    [queue]
+  );
 
   const handlePlaySong = (song: Song, index: number) => {
     useQueueStore.getState().setCurrentIndex(index);
@@ -89,47 +60,29 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleRemoveSong = (index: number) => {
     if (index === currentIndex) {
-      Alert.alert(
-        'Cannot Remove',
-        'Cannot remove the currently playing song',
-        [{ text: 'OK' }]
-      );
+      // Cannot remove currently playing song
       return;
     }
     removeFromQueue(index);
   };
 
-  const handleAddRecommended = (song: Song) => {
-    useQueueStore.getState().addToQueue(song, true); // Add as manual
-    // Remove from recommendations list
-    setRecommendedSongs(prev => prev.filter(s => s.id !== song.id));
-  };
-
   const handleClearQueue = () => {
-    Alert.alert(
-      'Clear Queue',
-      'Are you sure you want to clear the entire queue? This will stop playback.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => {
-            clearQueue();
-            navigation.goBack();
-          },
-        },
-      ]
-    );
+    setShowClearModal(true);
   };
 
-  const handleDragEnd = ({ data, from, to }: { data: QueueItem[]; from: number; to: number }) => {
+  const confirmClearQueue = () => {
+    clearQueue();
+    setShowClearModal(false);
+    navigation.goBack();
+  };
+
+  const handleDragEnd = useCallback(({ from, to }: { data: QueueItem[]; from: number; to: number }) => {
     if (from !== to) {
       reorderQueue(from, to);
     }
-  };
+  }, [reorderQueue]);
 
-  const renderQueueItem = ({ item, drag, isActive }: RenderItemParams<QueueItem>) => {
+  const renderQueueItem = useCallback(({ item, drag, isActive }: RenderItemParams<QueueItem>) => {
     const { song, index } = item;
     
     // Defensive check - skip if song is undefined
@@ -230,39 +183,39 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </ScaleDecorator>
     );
-  };
+  }, [currentSong?.id, currentIndex, handlePlaySong, handleRemoveSong]);
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.backgroundPrimary} translucent={false} />
+    <>
+      <GestureHandlerRootView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor={colors.backgroundPrimary} translucent={false} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Queue</Text>
-          <Text style={styles.headerSubtitle}>
-            {queue.length} {queue.length === 1 ? 'song' : 'songs'} • Long press to reorder
-          </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Queue</Text>
+            <Text style={styles.headerSubtitle}>
+              {queue.length} {queue.length === 1 ? 'song' : 'songs'} • Long press to reorder
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearQueue}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={22} color={colors.error} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={handleClearQueue}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="trash-outline" size={22} color={colors.error} />
-        </TouchableOpacity>
-      </View>
 
-      {/* Queue List */}
-      {queue.length > 0 ? (
-        <>
+        {/* Queue List */}
+        {queue.length > 0 ? (
           <DraggableFlatList
             key={refreshKey}
             data={queueItems}
@@ -272,72 +225,8 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             activationDistance={10}
-            ListFooterComponent={
-              recommendedSongs.length > 0 || loadingRecommendations ? (
-                <View style={styles.recommendedSection}>
-                  <View style={styles.recommendedHeader}>
-                    <Ionicons name="sparkles" size={18} color={colors.primary} />
-                    <Text style={styles.recommendedTitle}>Recommended</Text>
-                  </View>
-                  {loadingRecommendations ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="small" color={colors.primary} />
-                      <Text style={styles.loadingText}>Finding similar songs...</Text>
-                    </View>
-                  ) : (
-                    recommendedSongs.map((song, index) => {
-                      const imageUrl = getImageUrl(song.image, '150x150');
-                      const artistNames = getArtistNames(song);
-                      return (
-                        <View
-                          key={`recommended-${song.id}-${index}`}
-                          style={styles.recommendedItem}
-                        >
-                          <TouchableOpacity
-                            style={styles.recommendedItemContent}
-                            onPress={() => handlePlaySong(song, queue.length)}
-                            activeOpacity={0.7}
-                          >
-                            {imageUrl ? (
-                              <Image 
-                                source={{ uri: imageUrl }} 
-                                style={styles.recommendedAlbumArt}
-                              />
-                            ) : (
-                              <View style={[styles.recommendedAlbumArt, styles.albumArtPlaceholder]}>
-                                <Ionicons name="musical-notes" size={20} color={colors.textMuted} />
-                              </View>
-                            )}
-                            <View style={styles.recommendedSongInfo}>
-                              <Text style={styles.recommendedSongTitle} numberOfLines={1}>
-                                {song.name}
-                              </Text>
-                              <Text style={styles.recommendedArtistName} numberOfLines={1}>
-                                {artistNames}
-                              </Text>
-                            </View>
-                            <TouchableOpacity
-                              style={styles.addButton}
-                              onPress={() => handleAddRecommended(song)}
-                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                              <Ionicons name="add-circle" size={28} color={colors.primary} />
-                            </TouchableOpacity>
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    })
-                  )}
-                </View>
-              ) : null
-            }
           />
-        </>
-      ) : (
-        <ScrollView 
-          contentContainerStyle={styles.emptyScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        ) : (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconBg}>
               <Ionicons name="list-outline" size={48} color={colors.primary} />
@@ -347,9 +236,42 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
               Play a song to start building your queue
             </Text>
           </View>
-        </ScrollView>
-      )}
-    </GestureHandlerRootView>
+        )}
+      </GestureHandlerRootView>
+
+      {/* Clear Queue Modal */}
+      <Modal
+        visible={showClearModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowClearModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Clear Queue</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to clear the entire queue? This will stop playback.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowClearModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={confirmClearQueue}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -527,10 +449,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 100,
   },
-  emptyScrollContent: {
-    flexGrow: 1,
-    paddingBottom: 100,
-  },
   emptyIconBg: {
     width: 100,
     height: 100,
@@ -555,71 +473,56 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  // Recommended Section
-  recommendedSection: {
-    marginTop: spacing.xl,
-    paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  recommendedHeader: {
-    flexDirection: 'row',
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    gap: spacing.xs,
+    paddingHorizontal: spacing.xl,
   },
-  recommendedTitle: {
-    fontSize: 16,
+  modalContent: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.large,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
     fontFamily: 'Poppins_600SemiBold',
     color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
-  recommendedItem: {
-    marginBottom: spacing.xs,
-    borderRadius: borderRadius.medium,
-    backgroundColor: colors.backgroundSecondary,
-    overflow: 'hidden',
+  modalMessage: {
+    fontSize: 14,
+    fontFamily: 'Poppins_400Regular',
+    color: colors.textMuted,
+    lineHeight: 20,
+    marginBottom: spacing.lg,
   },
-  recommendedItemContent: {
+  modalButtons: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    gap: spacing.sm,
   },
-  recommendedAlbumArt: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.small,
-    marginRight: spacing.md,
+  modalButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.medium,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
     backgroundColor: colors.backgroundTertiary,
   },
-  recommendedSongInfo: {
-    flex: 1,
-    marginRight: spacing.sm,
+  modalButtonConfirm: {
+    backgroundColor: colors.error,
   },
-  recommendedSongTitle: {
+  modalButtonText: {
     fontSize: 14,
     fontFamily: 'Poppins_600SemiBold',
     color: colors.textPrimary,
-    marginBottom: 3,
   },
-  recommendedArtistName: {
-    fontSize: 12,
-    fontFamily: 'Poppins_400Regular',
-    color: colors.textMuted,
-  },
-  addButton: {
-    padding: spacing.xs,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    gap: spacing.sm,
-  },
-  loadingText: {
-    fontSize: 13,
-    fontFamily: 'Poppins_400Regular',
-    color: colors.textMuted,
+  modalButtonTextConfirm: {
+    color: colors.textPrimary,
   },
 });

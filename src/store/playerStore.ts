@@ -107,6 +107,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           // Get next song from queue based on repeat mode
           const { useQueueStore } = await import('./queueStore');
           const queueState = useQueueStore.getState();
+          
+          console.log('[PlayerStore] Current repeat mode:', queueState.repeat);
+          
           const nextSong = queueState.nextSong();
           
           if (nextSong) {
@@ -115,33 +118,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
             await new Promise(resolve => setTimeout(resolve, 100));
             await get().play(nextSong);
           } else {
-            // Queue ended - auto-populate with similar songs
-            console.log('[PlayerStore] Queue ended, fetching similar songs...');
-            const currentSong = get().currentSong;
-            
-            if (currentSong) {
-              // Auto-populate suggestions
-              await queueState.autoPopulateFromSuggestions(currentSong.id);
-              
-              // Get updated queue state
-              const updatedQueueState = useQueueStore.getState();
-              
-              // Move to next index if queue was populated
-              if (updatedQueueState.queue.length > updatedQueueState.currentIndex + 1) {
-                updatedQueueState.setCurrentIndex(updatedQueueState.currentIndex + 1);
-                const newNextSong = updatedQueueState.queue[updatedQueueState.currentIndex];
-                
-                if (newNextSong) {
-                  console.log('[PlayerStore] Auto-playing suggested song:', newNextSong.name);
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                  await get().play(newNextSong);
-                } else {
-                  console.log('[PlayerStore] No suggestions available, stopping playback');
-                }
-              } else {
-                console.log('[PlayerStore] Failed to populate suggestions, stopping playback');
-              }
-            }
+            // Queue ended - stop playback
+            console.log('[PlayerStore] Queue ended, stopping playback');
           }
         },
 
@@ -188,6 +166,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         await new Promise(resolve => setTimeout(resolve, 50));
         
         await AudioService.loadAudio(targetSong);
+      } else {
+        // Same song - seek to beginning if position is at the end
+        if (state.position >= state.duration - 1) {
+          await AudioService.seekTo(0);
+          set({ position: 0 });
+        }
       }
 
       // Play the audio
