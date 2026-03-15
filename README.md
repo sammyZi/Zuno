@@ -686,18 +686,6 @@ expo build:android
 eas build --platform ios --profile preview
 ```
 
-## 📄 License
-
-This project is created as part of an internship assignment and is for educational purposes only.
-
-## 👥 Credits
-
-- **Developer**: [Your Name]
-- **Design Reference**: Figma - Lokal Music Player App UI Kit
-- **API**: JioSaavn API (https://saavn.sumit.co)
-- **Icons**: Ionicons
-- **Fonts**: Google Fonts (Poppins)
-
 ## 📞 Support
 
 For issues or questions, please contact [bhingesamarth@gmail.com]
