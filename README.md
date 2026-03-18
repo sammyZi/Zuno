@@ -2,6 +2,26 @@
 
 A feature-rich React Native music streaming application built with Expo, integrating with the JioSaavn API. This app provides a seamless music listening experience with background playback, queue management, offline downloads, and a beautiful dark-themed UI.
 
+## 📸 Screenshots
+
+<div align="center">
+  <img src="ss/home_suggested.jpeg" alt="Home Suggested" width="250"/>
+  <img src="ss/home_songs.jpeg" alt="Home Songs" width="250"/>
+  <img src="ss/home_artists.jpeg" alt="Home Artists" width="250"/>
+</div>
+
+<div align="center">
+  <img src="ss/home_albums.jpeg" alt="Home Albums" width="250"/>
+  <img src="ss/search.jpeg" alt="Search" width="250"/>
+  <img src="ss/playlist.jpeg" alt="Playlists" width="250"/>
+</div>
+
+<div align="center">
+  <img src="ss/favourites.jpeg" alt="Favourites" width="250"/>
+  <img src="ss/downloads.jpeg" alt="Downloads" width="250"/>
+  <img src="ss/settings.jpeg" alt="Settings" width="250"/>
+</div>
+
 ## 📱 Features
 
 ### Core Features
@@ -505,40 +525,7 @@ Beyond the core requirements, the following features were added:
 13. **Gradient Backgrounds**: Beautiful gradient effects on player screen
 14. **Blur Effects**: Backdrop blur on modals and overlays
 
-## 📸 Screenshots
 
-> **Note**: Screenshots will be added here after the app is fully tested on a physical device.
-
-### Home Screen
-- Light and dark theme
-- Song list with search
-- Category tabs (Suggested, Songs, Artists, Albums)
-
-### Player Screen
-- Full-screen player with album artwork
-- Playback controls (play, pause, next, previous)
-- Seek bar with time display
-- Shuffle and repeat buttons
-- Download button with progress
-
-### Mini Player
-- Persistent bottom bar
-- Current song information
-- Play/pause control
-- Tap to expand to full player
-
-### Queue Screen
-- Current queue display
-- Drag-and-drop reordering
-- Delete songs from queue
-- Clear queue button
-
-### Other Screens
-- Favorites list
-- Playlists management
-- Settings
-- Search results
-- Downloads
 
 ## 🐛 Known Issues and Limitations
 

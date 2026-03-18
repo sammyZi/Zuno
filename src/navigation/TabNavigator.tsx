@@ -7,6 +7,7 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { TabParamList } from './types';
@@ -58,6 +59,11 @@ const TabBarBackground = () => {
 };
 
 export const TabNavigator: React.FC = () => {
+  const insets = useSafeAreaInsets();
+  
+  // Calculate tab bar height with safe area
+  const tabBarHeight = 60 + insets.bottom;
+  
   return (
     <Tab.Navigator
       screenOptions={{
@@ -67,8 +73,8 @@ export const TabNavigator: React.FC = () => {
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           elevation: 0,
-          height: 70,
-          paddingBottom: 10,
+          height: tabBarHeight,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
           paddingTop: 6,
           paddingHorizontal: 16,
           borderTopLeftRadius: 24,

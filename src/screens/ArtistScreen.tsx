@@ -81,6 +81,12 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  // Calculate total duration of all songs
+  const getTotalDuration = () => {
+    const totalSeconds = songs.reduce((sum, song) => sum + (song.duration || 0), 0);
+    return formatDuration(totalSeconds);
+  };
+
   const handleSongPress = (song: Song) => {
     playAndBuildQueue(song, songs);
     play(song);
@@ -155,17 +161,25 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
 
         {/* Stats */}
         <Text style={styles.artistStats}>
-          1 Album  |  {songs.length} Songs  |  01:25:43 mins
+          1 Album  |  {songs.length} {songs.length === 1 ? 'Song' : 'Songs'}  |  {getTotalDuration()}
         </Text>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.shuffleButton} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.shuffleButton} 
+            activeOpacity={0.7}
+            onPress={handleShufflePlay}
+          >
             <Ionicons name="shuffle" size={20} color={colors.backgroundPrimary} />
             <Text style={styles.shuffleButtonText}>Shuffle</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.playActionButton} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.playActionButton} 
+            activeOpacity={0.7}
+            onPress={handlePlayAll}
+          >
             <Ionicons name="play" size={18} color={colors.backgroundPrimary} />
             <Text style={styles.playActionButtonText}>Play</Text>
           </TouchableOpacity>
