@@ -4,27 +4,27 @@ A feature-rich React Native music streaming application built with Expo, integra
 
 ## 📸 Screenshots
 
-<div align="center">
-  <img src="ss/home_suggested.jpeg" alt="Home Suggested" width="250" style="margin: 10px"/>
-  <img src="ss/home_songs.jpeg" alt="Home Songs" width="250" style="margin: 10px"/>
-  <img src="ss/home_artists.jpeg" alt="Home Artists" width="250" style="margin: 10px"/>
-</div>
+<p align="center">
+  <img src="ss/home_suggested.jpeg" alt="Home Suggested" width="250" hspace="15" vspace="10"/>
+  <img src="ss/home_songs.jpeg" alt="Home Songs" width="250" hspace="15" vspace="10"/>
+  <img src="ss/home_artists.jpeg" alt="Home Artists" width="250" hspace="15" vspace="10"/>
+</p>
 
-<div align="center">
-  <img src="ss/home_albums.jpeg" alt="Home Albums" width="250" style="margin: 10px"/>
-  <img src="ss/player.jpeg" alt="Player" width="250" style="margin: 10px"/>
-  <img src="ss/search.jpeg" alt="Search" width="250" style="margin: 10px"/>
-</div>
+<p align="center">
+  <img src="ss/home_albums.jpeg" alt="Home Albums" width="250" hspace="15" vspace="10"/>
+  <img src="ss/player.jpeg" alt="Player" width="250" hspace="15" vspace="10"/>
+  <img src="ss/search.jpeg" alt="Search" width="250" hspace="15" vspace="10"/>
+</p>
 
-<div align="center">
-  <img src="ss/playlist.jpeg" alt="Playlists" width="250" style="margin: 10px"/>
-  <img src="ss/favourites.jpeg" alt="Favourites" width="250" style="margin: 10px"/>
-  <img src="ss/downloads.jpeg" alt="Downloads" width="250" style="margin: 10px"/>
-</div>
+<p align="center">
+  <img src="ss/playlist.jpeg" alt="Playlists" width="250" hspace="15" vspace="10"/>
+  <img src="ss/favourites.jpeg" alt="Favourites" width="250" hspace="15" vspace="10"/>
+  <img src="ss/downloads.jpeg" alt="Downloads" width="250" hspace="15" vspace="10"/>
+</p>
 
-<div align="center">
-  <img src="ss/settings.jpeg" alt="Settings" width="250" style="margin: 10px"/>
-</div>
+<p align="center">
+  <img src="ss/settings.jpeg" alt="Settings" width="250" hspace="15" vspace="10"/>
+</p>
 
 ## 📱 Features
 
