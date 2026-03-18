@@ -1,4 +1,4 @@
-# Music Player App
+# Zuno - Music Player App
 
 A feature-rich React Native music streaming application built with Expo, integrating with the JioSaavn API. This app provides a seamless music listening experience with background playback, queue management, offline downloads, and a beautiful dark-themed UI.
 
@@ -71,7 +71,7 @@ Before you begin, ensure you have the following installed:
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/sammyZi/Zuno.git
 cd music-player-app
 ```
 
@@ -651,38 +651,6 @@ interface Song {
 }
 ```
 
-## 🧪 Testing
-
-### Manual Testing Checklist
-
-- [ ] Home screen loads songs from API
-- [ ] Search functionality works correctly
-- [ ] Song playback starts when tapped
-- [ ] Play/pause controls work
-- [ ] Next/previous buttons work
-- [ ] Seek bar updates and seeking works
-- [ ] Mini player displays current song
-- [ ] Mini player syncs with full player
-- [ ] Background playback continues when app minimized
-- [ ] Queue management (add, reorder, remove)
-- [ ] Queue persists across app restarts
-- [ ] Shuffle mode randomizes playback
-- [ ] Repeat modes work correctly
-- [ ] Download functionality works
-- [ ] Offline playback works without internet
-- [ ] Favorites can be added/removed
-- [ ] Playlists can be created/edited/deleted
-- [ ] Settings persist across app restarts
-- [ ] App works on different screen sizes
-- [ ] App handles network errors gracefully
-
-### Performance Testing
-
-- [ ] App maintains 60fps during scrolling
-- [ ] Memory usage stays under 150MB
-- [ ] App responds to user input within 100ms
-- [ ] Search results appear within 2 seconds
-- [ ] Song playback starts within 1 second
 
 ## 🚢 Building for Production
 
@@ -705,21 +673,9 @@ expo build:android
 eas build --platform ios --profile preview
 ```
 
-## 📄 License
-
-This project is created as part of an internship assignment and is for educational purposes only.
-
-## 👥 Credits
-
-- **Developer**: [Your Name]
-- **Design Reference**: Figma - Lokal Music Player App UI Kit
-- **API**: JioSaavn API (https://saavn.sumit.co)
-- **Icons**: Ionicons
-- **Fonts**: Google Fonts (Poppins)
-
 ## 📞 Support
 
-For issues or questions, please contact [your-email@example.com]
+For issues or questions, please contact [bhingesamarth@gmail.com]
 
 ---
 
