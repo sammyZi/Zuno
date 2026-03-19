@@ -35,6 +35,7 @@ interface SongItemProps {
   isPlaying?: boolean;
   style?: ViewStyle;
   showMoreButton?: boolean;
+  showPlayButton?: boolean;
 }
 
 export const SongItem: React.FC<SongItemProps> = ({
@@ -49,6 +50,7 @@ export const SongItem: React.FC<SongItemProps> = ({
   isPlaying = false,
   style,
   showMoreButton = true,
+  showPlayButton = true,
 }) => {
   const { isFavorite, toggleFavorite } = useFavoritesStore();
   const { isDownloaded } = useDownloadStore();
@@ -96,17 +98,19 @@ export const SongItem: React.FC<SongItemProps> = ({
       )}
 
       {/* Orange play button */}
-      <TouchableOpacity
-        onPress={onPress}
-        style={[styles.playButton, isPlaying && styles.playButtonActive]}
-        activeOpacity={0.7}
-      >
-        <Ionicons
-          name={isPlaying ? 'pause' : 'play'}
-          size={12}
-          color={isPlaying ? colors.backgroundPrimary : colors.backgroundPrimary}
-        />
-      </TouchableOpacity>
+      {showPlayButton && (
+        <TouchableOpacity
+          onPress={onPress}
+          style={[styles.playButton, isPlaying && styles.playButtonActive]}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={isPlaying ? 'pause' : 'play'}
+            size={12}
+            color={isPlaying ? colors.backgroundPrimary : colors.backgroundPrimary}
+          />
+        </TouchableOpacity>
+      )}
 
       {/* 3-dot menu */}
       {showMoreButton && onMorePress && song && (

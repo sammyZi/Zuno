@@ -655,6 +655,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               isPlaying={currentSong?.id === item.id}
               style={styles.listItem}
               showMoreButton={!selectionMode}
+              showPlayButton={!selectionMode}
             />
           </View>
         );
@@ -726,9 +727,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.artistRowTitle} numberOfLines={1}>
                 {item.name}
               </Text>
-              <Text style={styles.artistRowSubtitle} numberOfLines={1}>
-                1 Album  |  12 Songs
-              </Text>
+              {item.type && (
+                <Text style={styles.artistRowSubtitle} numberOfLines={1}>
+                  {item.type}
+                </Text>
+              )}
             </View>
           </TouchableOpacity>
         );
@@ -809,9 +812,6 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <Text style={styles.albumGridSubtitle} numberOfLines={1}>
               {item.primaryArtists || 'Unknown'}  |  {item.year || '2023'}
-            </Text>
-            <Text style={styles.albumGridSongCount}>
-              {item.songCount || 0} {item.songCount === 1 ? 'song' : 'songs'}
             </Text>
           </TouchableOpacity>
         );

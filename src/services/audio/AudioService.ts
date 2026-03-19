@@ -95,8 +95,9 @@ class AudioServiceClass {
       this.playbackStatus = 'loading';
       this.callbacks.onLoading?.(true);
 
-      // Unload previous sound if exists
+      // Unload previous sound if exists to prevent overlap
       if (this.sound) {
+        console.log('[AudioService] Unloading previous audio before loading new one');
         await this.unloadAudio();
       }
 
@@ -116,7 +117,6 @@ class AudioServiceClass {
       }
 
       console.log('[AudioService] Loading audio:', song.name);
-      console.log('[AudioService] Audio URL:', audioUrl);
 
       // Create and load new sound with proper headers
       const { sound } = await Audio.Sound.createAsync(
@@ -168,11 +168,6 @@ class AudioServiceClass {
         
         await this.sound.playAsync();
         this.playbackStatus = 'playing';
-        
-        // Update notification
-        if (this.currentSong) {
-          await NotificationService.updateNotification(this.currentSong, true, this.sound);
-        }
         
         console.log('[AudioService] Playback started');
         
@@ -261,13 +256,26 @@ class AudioServiceClass {
     }
 
     try {
+      console.log('[AudioService] Unloading audio:', this.currentSong?.name);
+      
+      // Stop playback first
+      const status = await this.sound.getStatusAsync();
+      if (status.isLoaded && status.isPlaying) {
+        await this.sound.stopAsync();
+      }
+      
+      // Unload the sound
       await this.sound.unloadAsync();
       this.sound = null;
       this.currentSong = null;
       this.playbackStatus = 'idle';
-      console.log('[AudioService] Audio unloaded');
+      console.log('[AudioService] Audio unloaded successfully');
     } catch (error) {
       console.error('[AudioService] Unload error:', error);
+      // Force cleanup even on error
+      this.sound = null;
+      this.currentSong = null;
+      this.playbackStatus = 'idle';
     }
   }
 

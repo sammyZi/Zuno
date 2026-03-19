@@ -297,6 +297,8 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
                     onLongPress={() => handleSongLongPress(item)}
                     isPlaying={currentSong?.id === item.id}
                     style={styles.songItem}
+                    showPlayButton={!selectionMode}
+                    showMoreButton={false}
                   />
                   {!selectionMode && (
                     <TouchableOpacity

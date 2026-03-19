@@ -152,14 +152,24 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       return;
     }
 
+    // Prevent multiple simultaneous play calls
+    if (state.isLoading) {
+      console.warn('[PlayerStore] Already loading a song, ignoring duplicate play request');
+      return;
+    }
+
     try {
       set({ error: null, isLoading: true });
 
       // If new song, load it first
       if (!state.currentSong || state.currentSong.id !== targetSong.id) {
-        // Stop current playback to prevent glitching
-        if (state.isPlaying) {
-          await AudioService.pauseAudio();
+        console.log('[PlayerStore] Loading new song:', targetSong.name);
+        
+        // Stop and unload current playback completely to prevent overlap
+        if (state.currentSong) {
+          console.log('[PlayerStore] Stopping current song:', state.currentSong.name);
+          await AudioService.stopAudio();
+          await AudioService.unloadAudio();
         }
         
         set({ currentSong: targetSong, position: 0, duration: 0, isPlaying: false });
@@ -180,8 +190,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           }
         }
         
-        // Small delay to ensure clean transition
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Longer delay to ensure clean transition and prevent overlap
+        await new Promise(resolve => setTimeout(resolve, 150));
         
         await AudioService.loadAudio(targetSong);
       } else {
@@ -195,6 +205,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       // Play the audio
       await AudioService.playAudio();
       set({ isPlaying: true, isLoading: false });
+      console.log('[PlayerStore] Now playing:', targetSong.name);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to play audio';
       console.error('[PlayerStore] Play error:', errorMessage);

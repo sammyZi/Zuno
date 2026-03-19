@@ -103,6 +103,7 @@ export const ToastManager: React.FC = () => {
           onClose={() => handleCloseToast(toast.id)}
           duration={toast.type === 'success' ? 2000 : 0}
           index={index}
+          totalCount={toasts.length}
         />
       ))}
     </>
