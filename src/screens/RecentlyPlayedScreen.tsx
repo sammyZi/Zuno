@@ -11,7 +11,7 @@ import {
   StatusBar,
   FlatList,
   Platform,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -59,13 +59,13 @@ export const RecentlyPlayedScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Recently Played</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -167,3 +167,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+

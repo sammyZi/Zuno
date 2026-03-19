@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Song, Artist, Album } from '../../types/api';
 import { colors, spacing, borderRadius } from '../../theme';
@@ -64,11 +64,14 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
         {artists.map((artist, index) => {
           const imageUri = getImageUrl(artist.image);
           return (
-            <TouchableOpacity
+            <Pressable
               key={`search-artist-${artist.id}-${index}`}
-              style={styles.artistResult}
+              style={({ pressed }) => [
+                styles.artistResult,
+                pressed && styles.resultPressed,
+              ]}
               onPress={() => onArtistPress(artist)}
-              activeOpacity={0.7}
+              android_ripple={{ color: 'rgba(255, 255, 255, 0.1)' }}
             >
               {imageUri ? (
                 <Image source={{ uri: imageUri }} style={styles.artistImage} />
@@ -87,7 +90,7 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
                   Artist
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>
@@ -101,11 +104,14 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
         {albums.map((album, index) => {
           const imageUri = getImageUrl(album.image);
           return (
-            <TouchableOpacity
+            <Pressable
               key={`search-album-${album.id}-${index}`}
-              style={styles.albumResult}
+              style={({ pressed }) => [
+                styles.albumResult,
+                pressed && styles.resultPressed,
+              ]}
               onPress={() => onAlbumPress(album)}
-              activeOpacity={0.7}
+              android_ripple={{ color: 'rgba(255, 255, 255, 0.1)' }}
             >
               {imageUri ? (
                 <Image source={{ uri: imageUri }} style={styles.albumImage} />
@@ -122,7 +128,7 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
                   {album.primaryArtists || 'Album'}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>
@@ -215,5 +221,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Poppins_400Regular',
     color: colors.textMuted,
+  },
+  resultPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    opacity: 0.8,
   },
 });

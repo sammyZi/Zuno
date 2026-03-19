@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../theme';
 
@@ -29,26 +29,35 @@ export const RecentSearches: React.FC<RecentSearchesProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Recent Searches</Text>
-        <TouchableOpacity onPress={onClearAll}>
+        <Pressable
+          onPress={onClearAll}
+          style={({ pressed }) => pressed && styles.clearAllPressed}
+          android_ripple={{ color: 'rgba(255, 138, 0, 0.2)', borderless: true }}
+        >
           <Text style={styles.clearAllText}>Clear All</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
       <View style={styles.divider} />
       {searches.map((term, index) => (
-        <TouchableOpacity
+        <Pressable
           key={`${term}-${index}`}
-          style={styles.item}
+          style={({ pressed }) => [
+            styles.item,
+            pressed && styles.itemPressed,
+          ]}
           onPress={() => onSearchPress(term)}
-          activeOpacity={0.7}
+          android_ripple={{ color: 'rgba(255, 255, 255, 0.1)' }}
         >
           <Text style={styles.itemText}>{term}</Text>
-          <TouchableOpacity
+          <Pressable
             onPress={() => onRemoveSearch(term)}
+            style={({ pressed }) => pressed && styles.removePressed}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            android_ripple={{ color: 'rgba(255, 255, 255, 0.2)', borderless: true, radius: 12 }}
           >
             <Ionicons name="close" size={18} color={colors.textMuted} />
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </Pressable>
+        </Pressable>
       ))}
     </View>
   );
@@ -90,5 +99,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Poppins_400Regular',
     color: colors.textPrimary,
+  },
+  clearAllPressed: {
+    opacity: 0.6,
+  },
+  itemPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  removePressed: {
+    opacity: 0.5,
   },
 });

@@ -7,7 +7,7 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   StyleSheet,
 } from 'react-native';
@@ -34,14 +34,18 @@ export const SearchFilterChips: React.FC<SearchFilterChipsProps> = ({
       style={styles.scrollView}
     >
       {filters.map((filter) => (
-        <TouchableOpacity
+        <Pressable
           key={filter}
-          style={[
+          style={({ pressed }) => [
             styles.chip,
             activeFilter === filter && styles.chipActive,
+            pressed && styles.chipPressed,
           ]}
           onPress={() => onFilterChange(filter)}
-          activeOpacity={0.7}
+          android_ripple={{
+            color: activeFilter === filter ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 138, 0, 0.3)',
+            borderless: false,
+          }}
         >
           <Text
             style={[
@@ -51,7 +55,7 @@ export const SearchFilterChips: React.FC<SearchFilterChipsProps> = ({
           >
             {filter}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </ScrollView>
   );
@@ -81,6 +85,10 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: colors.primary,
+  },
+  chipPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.96 }],
   },
   chipText: {
     fontSize: 13,

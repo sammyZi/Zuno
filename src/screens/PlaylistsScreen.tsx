@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
-  TouchableOpacity,
+  Pressable,
   FlatList,
   TextInput,
   Modal,
@@ -51,10 +51,10 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const renderPlaylistItem = ({ item }: { item: Playlist }) => (
-    <TouchableOpacity 
+    <Pressable 
       style={styles.playlistCard}
       onPress={() => handleOpenPlaylist(item)}
-      activeOpacity={0.7}
+      
     >
       <View style={styles.playlistIcon}>
         <Ionicons name="musical-notes" size={32} color={colors.primary} />
@@ -68,7 +68,7 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-    </TouchableOpacity>
+    </Pressable>
   );
   return (
     <View style={styles.container}>
@@ -77,12 +77,12 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Playlists</Text>
-        <TouchableOpacity 
+        <Pressable 
           style={styles.addButton}
           onPress={() => setShowCreateModal(true)}
         >
           <Ionicons name="add" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Playlists List or Empty State */}
@@ -121,16 +121,16 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
                 style={styles.modalContainer}
               >
                 {/* Close Button */}
-                <TouchableOpacity
+                <Pressable
                   style={styles.closeButton}
                   onPress={() => {
                     setShowCreateModal(false);
                     setNewPlaylistName('');
                   }}
-                  activeOpacity={0.7}
+                  
                 >
                   <Ionicons name="close" size={24} color={colors.textMuted} />
-                </TouchableOpacity>
+                </Pressable>
 
                   {/* Icon with Gradient */}
                   <View style={styles.modalIconContainer}>
@@ -169,12 +169,12 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
                         maxLength={50}
                       />
                       {newPlaylistName.length > 0 && (
-                        <TouchableOpacity
+                        <Pressable
                           onPress={() => setNewPlaylistName('')}
                           style={styles.clearButton}
                         >
                           <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                        </TouchableOpacity>
+                        </Pressable>
                       )}
                     </View>
                     <View style={styles.inputFooter}>
@@ -190,17 +190,17 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
 
                   {/* Actions */}
                   <View style={styles.modalActions}>
-                    <TouchableOpacity
+                    <Pressable
                       style={[styles.modalButton, styles.cancelModalButton]}
                       onPress={() => {
                         setShowCreateModal(false);
                         setNewPlaylistName('');
                       }}
-                      activeOpacity={0.7}
+                      
                     >
                       <Text style={styles.cancelModalButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Pressable>
+                    <Pressable
                       style={[
                         styles.modalButton,
                         styles.createModalButton,
@@ -208,7 +208,7 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
                       ]}
                       onPress={handleCreatePlaylist}
                       disabled={!newPlaylistName.trim()}
-                      activeOpacity={0.8}
+                      
                     >
                       <LinearGradient
                         colors={
@@ -233,7 +233,7 @@ export const PlaylistsScreen: React.FC<Props> = ({ navigation }) => {
                           Create
                         </Text>
                       </LinearGradient>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 </Animated.View>
               </TouchableWithoutFeedback>
@@ -488,3 +488,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 });
+

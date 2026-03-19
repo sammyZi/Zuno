@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Image,
   Platform,
@@ -31,7 +31,7 @@ import { AudioService } from '../../services/audio';
 import { colors, spacing, borderRadius } from '../../theme';
 import { navigate } from '../../navigation/navigationRef';
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
 
 interface MiniPlayerProps {
   currentRouteName?: string;
@@ -112,10 +112,10 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
         <Animated.View style={[styles.progressFill, progressAnimStyle]} />
       </View>
 
-      <TouchableOpacity
+      <Pressable
         style={styles.content}
         onPress={handlePress}
-        activeOpacity={0.9}
+        
       >
         {/* Album Art */}
         <View style={styles.albumArtContainer}>
@@ -144,7 +144,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
           <AnimatedTouchable
             style={[styles.playButton, playBtnAnimStyle]}
             onPress={handlePlayPause}
-            activeOpacity={0.8}
+            
           >
             <Ionicons
               name={isPlaying ? 'pause' : 'play'}
@@ -154,14 +154,14 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ currentRouteName }) => {
             />
           </AnimatedTouchable>
 
-          <TouchableOpacity style={styles.nextButton} onPress={async () => {
+          <Pressable style={styles.nextButton} onPress={async () => {
             const next = nextSong();
             if (next) await play(next);
-          }} activeOpacity={0.7}>
+          }} >
             <Ionicons name="play-skip-forward" size={20} color={colors.primary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   );
 };
@@ -249,3 +249,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+

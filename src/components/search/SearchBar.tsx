@@ -7,7 +7,7 @@ import React, { useRef, useEffect } from 'react';
 import {
   View,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,9 +69,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         returnKeyType="search"
       />
       {value.length > 0 && (
-        <TouchableOpacity onPress={onClear} activeOpacity={0.7}>
+        <Pressable
+          onPress={onClear}
+          style={({ pressed }) => [
+            styles.clearButton,
+            pressed && styles.clearButtonPressed,
+          ]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          android_ripple={{ color: 'rgba(255, 255, 255, 0.2)', borderless: true, radius: 12 }}
+        >
           <Ionicons name="close" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );
@@ -99,5 +107,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Poppins_400Regular',
     paddingVertical: 0,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  clearButtonPressed: {
+    opacity: 0.5,
   },
 });

@@ -13,7 +13,7 @@ import {
   Text,
   StyleSheet,
   StatusBar,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   FlatList,
   RefreshControl,
@@ -392,15 +392,15 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         animationType="fade"
         onRequestClose={() => setShowSortModal(false)}
       >
-        <TouchableOpacity
+        <Pressable
           style={styles.modalOverlay}
-          activeOpacity={1}
+          
           onPress={() => setShowSortModal(false)}
         >
           <View style={styles.sortModalContainer}>
             <View style={styles.sortModal}>
               {options.map((option) => (
-                <TouchableOpacity
+                <Pressable
                   key={option}
                   style={styles.sortOption}
                   onPress={() => {
@@ -419,11 +419,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   ]}>
                     {currentSort === option && <View style={styles.radioInner} />}
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
     );
   };
@@ -452,9 +452,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.suggestedSection}>
           <View style={styles.suggestedSectionHeader}>
             <Text style={styles.suggestedSectionTitle}>Recently Played</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('RecentlyPlayed')}>
+            <Pressable onPress={() => navigation.navigate('RecentlyPlayed')}>
               <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           {recentlyPlayed.length === 0 ? (
             <View style={styles.emptySection}>
@@ -471,11 +471,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               {recentlyPlayed.map((song, index) => {
                 const imageUri = getImageUrl(song.image);
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={`recent-${song.id}-${index}`}
                     style={styles.suggestedCard}
                     onPress={() => handleSongPress(song, recentlyPlayed)}
-                    activeOpacity={0.7}
+                    
                   >
                     {imageUri ? (
                       <Image source={{ uri: imageUri }} style={styles.suggestedCardImage} />
@@ -490,7 +490,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.suggestedCardSubtitle} numberOfLines={1}>
                       {getArtistNames(song)}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>
@@ -501,9 +501,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.suggestedSection}>
           <View style={styles.suggestedSectionHeader}>
             <Text style={styles.suggestedSectionTitle}>Artists</Text>
-            <TouchableOpacity onPress={() => setSelectedCategory('Artists')}>
+            <Pressable onPress={() => setSelectedCategory('Artists')}>
               <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <ScrollView
             horizontal
@@ -514,11 +514,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               const imageUri = getImageUrl(song.image);
               const artistName = getArtistNames(song);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={`artist-${song.id}-${index}`}
                   style={styles.suggestedArtistCard}
                   onPress={() => handleSongPress(song, suggestedSongs)}
-                  activeOpacity={0.7}
+                  
                 >
                   {imageUri ? (
                     <Image source={{ uri: imageUri }} style={styles.suggestedArtistImage} />
@@ -530,7 +530,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   <Text style={styles.suggestedArtistName} numberOfLines={1}>
                     {artistName}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -540,9 +540,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.suggestedSection}>
           <View style={styles.suggestedSectionHeader}>
             <Text style={styles.suggestedSectionTitle}>Most Played</Text>
-            <TouchableOpacity onPress={() => setSelectedCategory('Songs')}>
+            <Pressable onPress={() => setSelectedCategory('Songs')}>
               <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <ScrollView
             horizontal
@@ -552,11 +552,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             {mostPlayed.map((song, index) => {
               const imageUri = getImageUrl(song.image);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={`most-${song.id}-${index}`}
                   style={styles.suggestedCard}
                   onPress={() => handleSongPress(song, mostPlayed)}
-                  activeOpacity={0.7}
+                  
                 >
                   {imageUri ? (
                     <Image source={{ uri: imageUri }} style={styles.suggestedCardImage} />
@@ -571,7 +571,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   <Text style={styles.suggestedCardSubtitle} numberOfLines={1}>
                     {getArtistNames(song)}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -590,27 +590,27 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
           <View style={styles.selectionActions}>
             {selectedSongs.size === songs.length ? (
-              <TouchableOpacity onPress={deselectAllSongs} activeOpacity={0.7}>
+              <Pressable onPress={deselectAllSongs} >
                 <Text style={styles.actionText}>Deselect All</Text>
-              </TouchableOpacity>
+              </Pressable>
             ) : (
-              <TouchableOpacity onPress={selectAllSongs} activeOpacity={0.7}>
+              <Pressable onPress={selectAllSongs} >
                 <Text style={styles.actionText}>Select All</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         </>
       ) : (
         <>
           <Text style={styles.listHeaderCount}>{songs.length} songs</Text>
-          <TouchableOpacity
+          <Pressable
             style={styles.sortButton}
             onPress={() => setShowSortModal(true)}
-            activeOpacity={0.7}
+            
           >
             <Text style={styles.sortButtonText}>{sortOption}</Text>
             <Ionicons name="swap-vertical" size={16} color={colors.primary} />
-          </TouchableOpacity>
+          </Pressable>
         </>
       )}
     </View>
@@ -628,10 +628,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         return (
           <View style={styles.songItemWrapper}>
             {selectionMode && (
-              <TouchableOpacity
+              <Pressable
                 style={styles.checkbox}
                 onPress={() => toggleSongSelection(item.id)}
-                activeOpacity={0.7}
+                
               >
                 <View style={[
                   styles.checkboxInner,
@@ -641,7 +641,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     <Ionicons name="checkmark" size={16} color={colors.textPrimary} />
                   )}
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             )}
             <SongItem
               song={item}
@@ -686,14 +686,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const renderArtistsHeader = () => (
     <View style={styles.listHeader}>
       <Text style={styles.listHeaderCount}>{artists.length} artists</Text>
-      <TouchableOpacity
+      <Pressable
         style={styles.sortButton}
         onPress={() => setShowSortModal(true)}
-        activeOpacity={0.7}
+        
       >
         <Text style={styles.sortButtonText}>{artistSortOption}</Text>
         <Ionicons name="swap-vertical" size={16} color={colors.primary} />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 
@@ -707,10 +707,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       renderItem={({ item }) => {
         const imageUri = getImageUrl(item.image);
         return (
-          <TouchableOpacity
+          <Pressable
             style={styles.artistRowItem}
             onPress={() => handleArtistPress(item)}
-            activeOpacity={0.7}
+            
           >
             {/* Circular image */}
             {imageUri ? (
@@ -733,7 +733,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               )}
             </View>
-          </TouchableOpacity>
+          </Pressable>
         );
       }}
       onEndReached={handleLoadMore}
@@ -762,14 +762,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const renderAlbumsHeader = () => (
     <View style={styles.listHeader}>
       <Text style={styles.listHeaderCount}>{albums.length} albums</Text>
-      <TouchableOpacity
+      <Pressable
         style={styles.sortButton}
         onPress={() => setShowSortModal(true)}
-        activeOpacity={0.7}
+        
       >
         <Text style={styles.sortButtonText}>Date Modified</Text>
         <Ionicons name="swap-vertical" size={16} color={colors.primary} />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 
@@ -785,10 +785,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       renderItem={({ item }) => {
         const imageUri = getImageUrl(item.image);
         return (
-          <TouchableOpacity
+          <Pressable
             style={styles.albumGridCard}
             onPress={() => handleAlbumPress(item)}
-            activeOpacity={0.7}
+            
           >
             {/* Album art */}
             {imageUri ? (
@@ -803,17 +803,17 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.albumGridTitle} numberOfLines={1}>
                 {item.name}
               </Text>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => console.log('More', item.name)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Ionicons name="ellipsis-vertical" size={14} color={colors.textMuted} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <Text style={styles.albumGridSubtitle} numberOfLines={1}>
               {item.primaryArtists || 'Unknown'}  |  {item.year || '2023'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         );
       }}
       onEndReached={handleLoadMore}
@@ -878,14 +878,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.header}>
         {selectionMode && selectedCategory === 'Songs' ? (
           <View style={styles.selectionHeader}>
-            <TouchableOpacity
+            <Pressable
               onPress={exitSelectionMode}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="close" size={28} color={colors.textPrimary} />
-            </TouchableOpacity>
+            </Pressable>
             <Text style={styles.appName}>Select Songs</Text>
-            <TouchableOpacity
+            <Pressable
               onPress={handleDownloadSelected}
               disabled={selectedSongs.size === 0}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -895,7 +895,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 size={24} 
                 color={selectedSongs.size > 0 ? colors.secondary : colors.textMuted} 
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : (
           <>
@@ -903,13 +903,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Ionicons name="musical-notes" size={28} color={colors.primary} />
               <Text style={styles.appName}>Zuno</Text>
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.searchButton}
               onPress={handleSearchPress}
-              activeOpacity={0.7}
+              
             >
               <Ionicons name="search-outline" size={24} color={colors.textPrimary} />
-            </TouchableOpacity>
+            </Pressable>
           </>
         )}
       </View>
@@ -1356,3 +1356,4 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
 });
+

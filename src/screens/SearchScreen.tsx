@@ -17,7 +17,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   StatusBar,
   Platform,
@@ -208,13 +208,13 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Search Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backButton}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
+          
         >
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
 
         <SearchBar
           value={searchQuery}
@@ -322,3 +322,4 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
 });
+

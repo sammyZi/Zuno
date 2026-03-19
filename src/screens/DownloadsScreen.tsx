@@ -10,7 +10,7 @@ import {
   StyleSheet,
   StatusBar,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -165,13 +165,13 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.emptySubtitle}>
         Download songs from the home screen to listen offline
       </Text>
-      <TouchableOpacity
+      <Pressable
         style={styles.emptyButton}
         onPress={() => navigation.navigate('Home')}
-        activeOpacity={0.7}
+        
       >
         <Text style={styles.emptyButtonText}>Browse Music</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 
@@ -184,13 +184,13 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
           <View style={styles.selectionActions}>
             {selectedSongs.size === downloadedSongs.length ? (
-              <TouchableOpacity onPress={deselectAll} activeOpacity={0.7}>
+              <Pressable onPress={deselectAll} >
                 <Text style={styles.actionText}>Deselect All</Text>
-              </TouchableOpacity>
+              </Pressable>
             ) : (
-              <TouchableOpacity onPress={selectAll} activeOpacity={0.7}>
+              <Pressable onPress={selectAll} >
                 <Text style={styles.actionText}>Select All</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         </>
@@ -199,14 +199,14 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.listHeaderCount}>
             {downloadedSongs.length} {downloadedSongs.length === 1 ? 'song' : 'songs'}
           </Text>
-          <TouchableOpacity
+          <Pressable
             style={styles.sortButton}
             onPress={handleSort}
-            activeOpacity={0.7}
+            
           >
             <Text style={styles.sortButtonText}>{sortOption}</Text>
             <Ionicons name="swap-vertical" size={16} color={colors.primary} />
-          </TouchableOpacity>
+          </Pressable>
         </>
       )}
     </View>
@@ -232,14 +232,14 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.header}>
         {selectionMode ? (
           <View style={styles.selectionHeader}>
-            <TouchableOpacity
+            <Pressable
               onPress={exitSelectionMode}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="close" size={28} color={colors.textPrimary} />
-            </TouchableOpacity>
+            </Pressable>
             <Text style={styles.headerTitle}>Select Songs</Text>
-            <TouchableOpacity
+            <Pressable
               onPress={handleDeleteSelected}
               disabled={selectedSongs.size === 0}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -249,7 +249,7 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
                 size={24} 
                 color={selectedSongs.size > 0 ? colors.error : colors.textMuted} 
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : (
           <Text style={styles.headerTitle}>Downloads</Text>
@@ -271,10 +271,10 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
             return (
               <View style={styles.songItemWrapper}>
                 {selectionMode && (
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.checkbox}
                     onPress={() => toggleSongSelection(item.id)}
-                    activeOpacity={0.7}
+                    
                   >
                     <View style={[
                       styles.checkboxInner,
@@ -284,7 +284,7 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
                         <Ionicons name="checkmark" size={16} color={colors.textPrimary} />
                       )}
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
                 <View style={styles.songItemContainer}>
                   <SongItem
@@ -301,13 +301,13 @@ export const DownloadsScreen: React.FC<Props> = ({ navigation }) => {
                     showMoreButton={false}
                   />
                   {!selectionMode && (
-                    <TouchableOpacity
+                    <Pressable
                       style={styles.deleteButton}
                       onPress={() => handleDeleteDownload(item)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
-                    </TouchableOpacity>
+                    </Pressable>
                   )}
                 </View>
               </View>
@@ -481,3 +481,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
 });
+

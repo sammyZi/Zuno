@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayerStore } from '../../store/playerStore';
 import { useQueueStore, RepeatMode } from '../../store/queueStore';
@@ -106,7 +106,7 @@ export const RepeatTestComponent: React.FC = () => {
       {/* Repeat Control */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Repeat Control</Text>
-        <TouchableOpacity style={styles.repeatButton} onPress={handleRepeatToggle}>
+        <Pressable style={styles.repeatButton} onPress={handleRepeatToggle}>
           <View style={styles.iconWithBadge}>
             <Ionicons name={getRepeatIcon()} size={32} color={getRepeatColor()} />
             {repeat === 'one' && (
@@ -118,7 +118,7 @@ export const RepeatTestComponent: React.FC = () => {
           <Text style={styles.repeatButtonText}>
             Tap to cycle: OFF → ALL → ONE
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Expected Behavior */}
@@ -285,3 +285,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+

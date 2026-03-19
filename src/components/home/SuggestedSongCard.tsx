@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
+import { Pressable, View, Text, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 
@@ -25,10 +25,14 @@ export const SuggestedSongCard: React.FC<SuggestedSongCardProps> = ({
   onPress,
 }) => {
   return (
-    <TouchableOpacity
-      style={[styles.container, isPlaying && styles.containerActive]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.container,
+        isPlaying && styles.containerActive,
+        pressed && styles.containerPressed,
+      ]}
       onPress={onPress}
-      activeOpacity={0.75}
+      android_ripple={{ color: 'rgba(255, 138, 0, 0.2)', borderless: false }}
     >
       {/* Square Album Art */}
       <View style={styles.imageWrapper}>
@@ -56,7 +60,7 @@ export const SuggestedSongCard: React.FC<SuggestedSongCardProps> = ({
       <Text style={styles.artist} numberOfLines={1}>
         {artist}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -66,6 +70,10 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   containerActive: {},
+  containerPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
+  },
   imageWrapper: {
     position: 'relative',
     marginBottom: spacing.sm,
@@ -110,3 +118,4 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 });
+

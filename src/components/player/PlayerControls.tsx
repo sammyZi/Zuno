@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface PlayerControlsProps {
   isPlaying: boolean;
@@ -61,24 +61,24 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
   return (
     <View style={[styles.container, style]}>
       {/* Previous Button */}
-      <AnimatedTouchable
+      <AnimatedPressable
         onPress={() => { animatePress(prevScale); onPrevious(); }}
         disabled={disablePrevious}
         style={[styles.secondaryButton, prevAnimStyle, disablePrevious && styles.disabled]}
-        activeOpacity={0.7}
+        android_ripple={{ color: 'rgba(255, 255, 255, 0.2)', borderless: true, radius: 26 }}
       >
         <Ionicons
           name="play-skip-back"
           size={22}
           color={disablePrevious ? colors.textMuted : colors.textPrimary}
         />
-      </AnimatedTouchable>
+      </AnimatedPressable>
 
       {/* Play/Pause Button */}
-      <AnimatedTouchable
+      <AnimatedPressable
         onPress={() => { animatePress(playScale); onPlayPause(); }}
         style={[styles.primaryButton, playAnimStyle]}
-        activeOpacity={0.85}
+        android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', borderless: true, radius: 34 }}
       >
         <LinearGradient
           colors={[colors.primaryLight, colors.primary, colors.primaryDark]}
@@ -93,21 +93,21 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
             style={!isPlaying ? { marginLeft: 3 } : undefined}
           />
         </LinearGradient>
-      </AnimatedTouchable>
+      </AnimatedPressable>
 
       {/* Next Button */}
-      <AnimatedTouchable
+      <AnimatedPressable
         onPress={() => { animatePress(nextScale); onNext(); }}
         disabled={disableNext}
         style={[styles.secondaryButton, nextAnimStyle, disableNext && styles.disabled]}
-        activeOpacity={0.7}
+        android_ripple={{ color: 'rgba(255, 255, 255, 0.2)', borderless: true, radius: 26 }}
       >
         <Ionicons
           name="play-skip-forward"
           size={22}
           color={disableNext ? colors.textMuted : colors.textPrimary}
         />
-      </AnimatedTouchable>
+      </AnimatedPressable>
     </View>
   );
 };

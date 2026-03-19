@@ -9,7 +9,7 @@ import {
   Text,
   StyleSheet,
   Modal,
-  TouchableOpacity,
+  Pressable,
   TouchableWithoutFeedback,
   TextInput,
   Alert,
@@ -142,14 +142,14 @@ export const PlaylistOptionsModal: React.FC<PlaylistOptionsModalProps> = ({
                 {/* Options */}
                 <View style={styles.options}>
                   {OPTION_ITEMS.map((item, index) => (
-                    <TouchableOpacity
+                    <Pressable
                       key={item.key}
                       style={[
                         styles.option,
                         index === OPTION_ITEMS.length - 1 && styles.optionLast,
                       ]}
                       onPress={() => handleOptionPress(item.key)}
-                      activeOpacity={0.6}
+                      
                     >
                       <View style={[styles.optionIconBg, { backgroundColor: item.iconBg }]}>
                         <Ionicons name={item.icon} size={22} color={item.iconColor} />
@@ -164,19 +164,19 @@ export const PlaylistOptionsModal: React.FC<PlaylistOptionsModalProps> = ({
                         color={colors.textMuted}
                         style={{ opacity: 0.4 }}
                       />
-                    </TouchableOpacity>
+                    </Pressable>
                   ))}
                 </View>
 
                 {/* Cancel Button */}
                 <View style={styles.cancelContainer}>
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.cancelButton}
                     onPress={onClose}
-                    activeOpacity={0.7}
+                    
                   >
                     <Text style={styles.cancelText}>Cancel</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               </View>
             </TouchableWithoutFeedback>
@@ -214,24 +214,24 @@ export const PlaylistOptionsModal: React.FC<PlaylistOptionsModalProps> = ({
                 />
 
                 <View style={styles.renameButtons}>
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.renameCancelButton}
                     onPress={() => setShowRenameModal(false)}
-                    activeOpacity={0.7}
+                    
                   >
                     <Text style={styles.renameCancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </Pressable>
+                  <Pressable
                     style={[
                       styles.renameSaveButton,
                       !newName.trim() && styles.renameSaveButtonDisabled,
                     ]}
                     onPress={handleRenameSubmit}
-                    activeOpacity={0.7}
+                    
                     disabled={!newName.trim()}
                   >
                     <Text style={styles.renameSaveText}>Save</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               </View>
             </TouchableWithoutFeedback>
@@ -412,3 +412,4 @@ const styles = StyleSheet.create({
     color: colors.backgroundPrimary,
   },
 });
+

@@ -14,7 +14,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   Image,
   StatusBar,
@@ -129,20 +129,20 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
+          <Pressable
             style={styles.headerBtn}
             onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
+            
           >
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+          <Pressable style={styles.headerBtn} >
             <Ionicons name="search-outline" size={22} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+          </Pressable>
+          <Pressable style={styles.headerBtn} >
             <Ionicons name="ellipsis-horizontal" size={22} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Artist Image */}
@@ -166,23 +166,23 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
+          <Pressable 
             style={styles.shuffleButton} 
-            activeOpacity={0.7}
+            
             onPress={handleShufflePlay}
           >
             <Ionicons name="shuffle" size={20} color={colors.backgroundPrimary} />
             <Text style={styles.shuffleButtonText}>Shuffle</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity 
+          <Pressable 
             style={styles.playActionButton} 
-            activeOpacity={0.7}
+            
             onPress={handlePlayAll}
           >
             <Ionicons name="play" size={18} color={colors.backgroundPrimary} />
             <Text style={styles.playActionButtonText}>Play</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Divider */}
@@ -191,9 +191,9 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* Songs Section */}
         <View style={styles.songsHeader}>
           <Text style={styles.songsSectionTitle}>Songs</Text>
-          <TouchableOpacity>
+          <Pressable>
             <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Songs List */}
@@ -350,3 +350,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
 });
+

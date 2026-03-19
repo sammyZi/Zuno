@@ -8,9 +8,8 @@ import {
   Modal,
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
   Pressable,
+  StyleSheet,
 } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 
@@ -53,21 +52,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
             {/* Buttons */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.button, styles.cancelButton]}
                 onPress={onCancel}
-                activeOpacity={0.7}
+                
               >
                 <Text style={styles.cancelButtonText}>{cancelText}</Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 style={[styles.button, styles.confirmButton, { backgroundColor: confirmColor }]}
                 onPress={onConfirm}
-                activeOpacity={0.7}
+                
               >
                 <Text style={styles.confirmButtonText}>{confirmText}</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </Pressable>
@@ -136,3 +135,4 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 });
+

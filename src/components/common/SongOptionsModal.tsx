@@ -8,9 +8,8 @@ import {
   Modal,
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
   Pressable,
+  StyleSheet,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -76,28 +75,28 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
             <View style={styles.options}>
               {/* Download / Delete Download */}
               {isDownloaded ? (
-                <TouchableOpacity
+                <Pressable
                   style={styles.option}
                   onPress={() => {
                     onDeleteDownload();
                     onClose();
                   }}
-                  activeOpacity={0.7}
+                  
                 >
                   <View style={[styles.optionIcon, { backgroundColor: colors.error + '15' }]}>
                     <Ionicons name="trash-outline" size={22} color={colors.error} />
                   </View>
                   <Text style={styles.optionText}>Delete Download</Text>
-                </TouchableOpacity>
+                </Pressable>
               ) : (
-                <TouchableOpacity
+                <Pressable
                   style={styles.option}
                   onPress={() => {
                     onDownload();
                     onClose();
                   }}
                   disabled={isDownloading}
-                  activeOpacity={0.7}
+                  
                 >
                   <View style={[styles.optionIcon, { backgroundColor: colors.secondary + '15' }]}>
                     <Ionicons 
@@ -109,50 +108,50 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
                   <Text style={styles.optionText}>
                     {isDownloading ? 'Downloading...' : 'Download'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
 
               {/* Add to Queue */}
-              <TouchableOpacity
+              <Pressable
                 style={styles.option}
                 onPress={() => {
                   onAddToQueue();
                   onClose();
                 }}
-                activeOpacity={0.7}
+                
               >
                 <View style={[styles.optionIcon, { backgroundColor: colors.primary + '15' }]}>
                   <Ionicons name="list-outline" size={22} color={colors.primary} />
                 </View>
                 <Text style={styles.optionText}>Add to Queue</Text>
-              </TouchableOpacity>
+              </Pressable>
 
               {/* Add to Playlist */}
               {onAddToPlaylist && (
-                <TouchableOpacity
+                <Pressable
                   style={styles.option}
                   onPress={() => {
                     onAddToPlaylist();
                     onClose();
                   }}
-                  activeOpacity={0.7}
+                  
                 >
                   <View style={[styles.optionIcon, { backgroundColor: colors.info + '40' }]}>
                     <Ionicons name="add-circle-outline" size={22} color={colors.secondary} />
                   </View>
                   <Text style={styles.optionText}>Add to Playlist</Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
 
             {/* Cancel Button */}
-            <TouchableOpacity
+            <Pressable
               style={styles.cancelButton}
               onPress={onClose}
-              activeOpacity={0.7}
+              
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </Pressable>
       </Pressable>
@@ -239,3 +238,4 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 });
+

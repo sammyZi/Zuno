@@ -10,7 +10,7 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -115,10 +115,10 @@ export const SettingsScreen: React.FC = () => {
           </View>
           
           <View style={styles.card}>
-            <TouchableOpacity
+            <Pressable
               style={[styles.settingItem, audioQuality === '96kbps' && styles.settingItemActive]}
               onPress={() => handleAudioQualitySelect('96kbps')}
-              activeOpacity={0.7}
+              
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
@@ -134,14 +134,14 @@ export const SettingsScreen: React.FC = () => {
                   <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={styles.divider} />
 
-            <TouchableOpacity
+            <Pressable
               style={[styles.settingItem, audioQuality === '160kbps' && styles.settingItemActive]}
               onPress={() => handleAudioQualitySelect('160kbps')}
-              activeOpacity={0.7}
+              
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
@@ -157,14 +157,14 @@ export const SettingsScreen: React.FC = () => {
                   <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={styles.divider} />
 
-            <TouchableOpacity
+            <Pressable
               style={[styles.settingItem, audioQuality === '320kbps' && styles.settingItemActive]}
               onPress={() => handleAudioQualitySelect('320kbps')}
-              activeOpacity={0.7}
+              
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
@@ -180,7 +180,7 @@ export const SettingsScreen: React.FC = () => {
                   <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -192,10 +192,10 @@ export const SettingsScreen: React.FC = () => {
           </View>
           
           <View style={styles.card}>
-            <TouchableOpacity
+            <Pressable
               style={[styles.settingItem, downloadPreference === 'wifi-only' && styles.settingItemActive]}
               onPress={() => handleDownloadPreferenceSelect('wifi-only')}
-              activeOpacity={0.7}
+              
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
@@ -211,14 +211,14 @@ export const SettingsScreen: React.FC = () => {
                   <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={styles.divider} />
 
-            <TouchableOpacity
+            <Pressable
               style={[styles.settingItem, downloadPreference === 'mobile-allowed' && styles.settingItemActive]}
               onPress={() => handleDownloadPreferenceSelect('mobile-allowed')}
-              activeOpacity={0.7}
+              
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
@@ -234,7 +234,7 @@ export const SettingsScreen: React.FC = () => {
                   <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -263,11 +263,11 @@ export const SettingsScreen: React.FC = () => {
 
             <View style={styles.divider} />
 
-            <TouchableOpacity
+            <Pressable
               style={styles.settingItem}
               onPress={handleClearCache}
               disabled={isClearing}
-              activeOpacity={0.7}
+              
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: colors.textMuted + '20' }]}>
@@ -283,7 +283,7 @@ export const SettingsScreen: React.FC = () => {
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -478,3 +478,4 @@ const styles = StyleSheet.create({
     height: spacing.xl,
   },
 });
+

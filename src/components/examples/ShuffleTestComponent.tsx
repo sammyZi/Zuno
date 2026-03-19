@@ -10,7 +10,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   Alert,
 } from 'react-native';
@@ -117,39 +117,39 @@ export const ShuffleTestComponent: React.FC = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Test Cases</Text>
         
-        <TouchableOpacity
+        <Pressable
           style={styles.testButton}
           onPress={() => testShuffle(1)}
         >
           <Text style={styles.testButtonText}>Test 1: Single Song</Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           style={styles.testButton}
           onPress={() => testShuffle(5)}
         >
           <Text style={styles.testButtonText}>Test 2: Small Queue (5 songs)</Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           style={styles.testButton}
           onPress={() => testShuffle(15)}
         >
           <Text style={styles.testButtonText}>Test 3: Medium Queue (15 songs)</Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           style={styles.testButton}
           onPress={() => testShuffle(50)}
         >
           <Text style={styles.testButtonText}>Test 4: Large Queue (50 songs)</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Actions</Text>
         
-        <TouchableOpacity
+        <Pressable
           style={[styles.actionButton, shuffle && styles.actionButtonActive]}
           onPress={toggleShuffle}
         >
@@ -161,16 +161,16 @@ export const ShuffleTestComponent: React.FC = () => {
           <Text style={[styles.actionButtonText, shuffle && styles.actionButtonTextActive]}>
             Toggle Shuffle
           </Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           style={styles.actionButton}
           onPress={verifyOrder}
           disabled={queue.length === 0}
         >
           <Ionicons name="checkmark-circle-outline" size={24} color={colors.textPrimary} />
           <Text style={styles.actionButtonText}>Verify Order</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={styles.section}>
@@ -332,3 +332,4 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 });
+

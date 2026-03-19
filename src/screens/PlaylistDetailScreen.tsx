@@ -9,7 +9,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,12 +54,12 @@ export const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
           <Text style={styles.emptyText}>Playlist not found</Text>
-          <TouchableOpacity
+          <Pressable
             style={styles.backToListButton}
             onPress={() => navigation.goBack()}
           >
             <Text style={styles.backToListText}>Back to Playlists</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );
@@ -137,25 +137,25 @@ export const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backButton}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
+          
         >
           <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {playlist.name}
           </Text>
         </View>
-        <TouchableOpacity
+        <Pressable
           style={styles.headerButton}
           onPress={() => setShowPlaylistMenu(true)}
-          activeOpacity={0.7}
+          
         >
           <Ionicons name="ellipsis-horizontal" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Playlist Info Card */}
@@ -186,25 +186,25 @@ export const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({
       {/* Action Buttons */}
       {playlist.songs.length > 0 && (
         <View style={styles.actionButtons}>
-          <TouchableOpacity
+          <Pressable
             style={styles.playAllButton}
             onPress={handlePlayAll}
-            activeOpacity={0.8}
+            
           >
             <Ionicons name="play" size={18} color={colors.backgroundPrimary} />
             <Text style={styles.playAllText}>Play All</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             style={styles.shuffleButton}
             onPress={() => {
               // TODO: Shuffle and play
               handlePlayAll();
             }}
-            activeOpacity={0.8}
+            
           >
             <Ionicons name="shuffle" size={18} color={colors.primary} />
             <Text style={styles.shuffleText}>Shuffle</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
 
@@ -428,3 +428,4 @@ const styles = StyleSheet.create({
     color: colors.backgroundPrimary,
   },
 });
+

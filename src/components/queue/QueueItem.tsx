@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Song } from '../../types';
 import { colors } from '../../theme/colors';
@@ -38,23 +38,23 @@ export const QueueItem: React.FC<QueueItemProps> = ({
   const duration = formatDuration(song.duration);
 
   return (
-    <TouchableOpacity
+    <Pressable
       style={[
         styles.container,
         isActive && styles.dragging,
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      
       onLongPress={drag}
     >
       {/* Drag Handle (Left) */}
-      <TouchableOpacity
+      <Pressable
         style={styles.dragHandle}
         onPressIn={drag}
-        activeOpacity={0.7}
+        
       >
         <Ionicons name="reorder-two" size={20} color={colors.textMuted} />
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Album Art */}
       <AlbumArt uri={imageUrl} size="small" />
@@ -73,14 +73,14 @@ export const QueueItem: React.FC<QueueItemProps> = ({
       </View>
 
       {/* Delete Button */}
-      <TouchableOpacity
+      <Pressable
         style={styles.deleteButton}
         onPress={onDelete}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-      </TouchableOpacity>
-    </TouchableOpacity>
+      </Pressable>
+    </Pressable>
   );
 };
 
@@ -125,3 +125,4 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
 });
+

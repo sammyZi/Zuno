@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { colors, typography, spacing } from '../../theme';
 
 interface CategoryTabProps {
@@ -21,10 +21,13 @@ export const CategoryTab: React.FC<CategoryTabProps> = ({
   onPress,
 }) => {
   return (
-    <TouchableOpacity
-      style={styles.container}
+    <Pressable
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      android_ripple={{ color: 'rgba(255, 138, 0, 0.2)', borderless: true }}
     >
       <Text
         style={[styles.label, isActive && styles.labelActive]}
@@ -33,7 +36,7 @@ export const CategoryTab: React.FC<CategoryTabProps> = ({
         {label}
       </Text>
       {isActive && <View style={styles.underline} />}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -44,6 +47,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   label: {
     fontSize: 15,

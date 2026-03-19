@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
+import { Pressable, View, Text, StyleSheet, Image } from 'react-native';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 
 interface ArtistCardProps {
@@ -19,10 +19,13 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({
   onPress,
 }) => {
   return (
-    <TouchableOpacity
-      style={styles.container}
+    <Pressable
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.containerPressed,
+      ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      android_ripple={{ color: 'rgba(255, 138, 0, 0.2)', borderless: false }}
     >
       <View style={styles.imageContainer}>
         {imageUri ? (
@@ -38,7 +41,7 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({
       <Text style={styles.name} numberOfLines={2}>
         {name}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -47,6 +50,10 @@ const styles = StyleSheet.create({
     width: 120,
     alignItems: 'center',
     marginRight: spacing.md,
+  },
+  containerPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   imageContainer: {
     width: 100,
@@ -75,3 +82,4 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_500Medium',
   },
 });
+

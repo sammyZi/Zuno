@@ -8,7 +8,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   StatusBar,
   Image,
   Modal,
@@ -119,12 +119,12 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
             isActive && styles.queueItemDragging,
           ]}
         >
-          <TouchableOpacity
+          <Pressable
             style={styles.queueItemContent}
             onPress={() => handlePlaySong(song, index)}
             onLongPress={drag}
             disabled={isActive}
-            activeOpacity={0.7}
+            
           >
             {/* Drag Handle */}
             <View style={styles.dragHandle}>
@@ -184,15 +184,15 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* Remove Button */}
             {!isCurrentSong && (
-              <TouchableOpacity
+              <Pressable
                 style={styles.removeButton}
                 onPress={() => handleRemoveSong(index)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Ionicons name="close-circle" size={22} color={colors.textMuted} />
-              </TouchableOpacity>
+              </Pressable>
             )}
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </ScaleDecorator>
     );
@@ -205,26 +205,26 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
+          <Pressable
             style={styles.backButton}
             onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
+            
           >
             <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Queue</Text>
             <Text style={styles.headerSubtitle}>
               {queue.length} {queue.length === 1 ? 'song' : 'songs'} • Long press to reorder
             </Text>
           </View>
-          <TouchableOpacity
+          <Pressable
             style={styles.clearButton}
             onPress={handleClearQueue}
-            activeOpacity={0.7}
+            
           >
             <Ionicons name="trash-outline" size={22} color={colors.error} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Queue List */}
@@ -266,20 +266,20 @@ export const QueueScreen: React.FC<Props> = ({ navigation }) => {
               Are you sure you want to clear the entire queue? This will stop playback.
             </Text>
             <View style={styles.modalButtons}>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.modalButton, styles.modalButtonCancel]}
                 onPress={() => setShowClearModal(false)}
-                activeOpacity={0.7}
+                
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalButton, styles.modalButtonConfirm]}
                 onPress={confirmClearQueue}
-                activeOpacity={0.7}
+                
               >
                 <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Clear</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -539,3 +539,4 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 });
+

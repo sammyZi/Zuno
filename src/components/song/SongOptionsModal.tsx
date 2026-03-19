@@ -10,7 +10,7 @@ import {
   Text,
   StyleSheet,
   Modal,
-  TouchableOpacity,
+  Pressable,
   TouchableWithoutFeedback,
   Image,
 } from 'react-native';
@@ -167,14 +167,14 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
               {/* Options */}
               <View style={styles.options}>
                 {OPTION_ITEMS.map((item, index) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={item.key}
                     style={[
                       styles.option,
                       index === OPTION_ITEMS.length - 1 && styles.optionLast,
                     ]}
                     onPress={() => handleOptionPress(item.key)}
-                    activeOpacity={0.6}
+                    
                   >
                     <View style={[styles.optionIconBg, { backgroundColor: item.iconBg }]}>
                       <Ionicons name={item.icon} size={22} color={item.iconColor} />
@@ -184,15 +184,15 @@ export const SongOptionsModal: React.FC<SongOptionsModalProps> = ({
                       <Text style={styles.optionSubtitle}>{item.subtitle}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ opacity: 0.4 }} />
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
 
               {/* Cancel Button */}
               <View style={styles.cancelContainer}>
-                <TouchableOpacity style={styles.cancelButton} onPress={onClose} activeOpacity={0.7}>
+                <Pressable style={styles.cancelButton} onPress={onClose} >
                   <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -309,3 +309,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 });
+

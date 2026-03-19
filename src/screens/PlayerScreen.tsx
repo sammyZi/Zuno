@@ -17,7 +17,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Dimensions,
   StatusBar,
@@ -60,7 +60,7 @@ const SEEK_SECONDS = 10;
 
 type Props = StackScreenProps<RootStackParamList, 'Player'>;
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
 
 // ────────────────────────────────────────
 // YouTube-style Double-tap Seek Feedback
@@ -439,9 +439,9 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.headerBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
         <View style={styles.emptyContainer}>
           <Ionicons name="musical-notes-outline" size={72} color={colors.textMuted} />
@@ -464,8 +464,8 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
       </View>
 
       {/* ── Upper Section: Header + Artwork (Double-tap to seek) ── */}
-      <TouchableOpacity
-        activeOpacity={1}
+      <Pressable
+        
         onPress={handleUpperSectionPress}
         style={styles.upperSection}
       >
@@ -474,21 +474,21 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           entering={FadeInDown.duration(400).delay(100)}
           style={styles.header}
         >
-          <TouchableOpacity
+          <Pressable
             style={styles.headerBtn}
             onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
+            
           >
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity 
+          <Pressable 
             style={styles.headerBtn} 
-            activeOpacity={0.7}
+            
             onPress={() => setShowOptionsModal(true)}
           >
             <Ionicons name="ellipsis-horizontal" size={22} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         {/* ── Artwork ── */}
@@ -516,7 +516,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* Animated seek feedback overlays */}
         <AnimatedSeekFeedback side="left" triggerCount={seekLeftCount} />
         <AnimatedSeekFeedback side="right" triggerCount={seekRightCount} />
-      </TouchableOpacity>
+      </Pressable>
 
       {/* ── Bottom: Info + Controls ── */}
       <View style={styles.controlsSection}>
@@ -552,19 +552,19 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           style={styles.mainControls}
         >
           {/* Previous */}
-          <TouchableOpacity
+          <Pressable
             style={styles.skipButton}
             onPress={handlePrevious}
-            activeOpacity={0.7}
+            
           >
             <Ionicons name="play-skip-back" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Rewind 10s — clock-rotation icon (mirrored reload) */}
-          <TouchableOpacity
+          <Pressable
             style={styles.seekButton}
             onPress={handleSeekBackward}
-            activeOpacity={0.7}
+            
           >
             <View style={styles.seekIconContainer}>
               <Ionicons
@@ -575,7 +575,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
               />
               <Text style={styles.seekBtnLabelCenter}>10</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Play / Pause — large orange circle */}
           <AnimatedTouchable
@@ -584,7 +584,7 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
               animatePress(playBtnScale);
               togglePlayPause();
             }}
-            activeOpacity={0.85}
+            
             disabled={isLoading}
           >
             <View style={styles.playButtonInner}>
@@ -602,10 +602,10 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           </AnimatedTouchable>
 
           {/* Forward 10s — clock-rotation icon */}
-          <TouchableOpacity
+          <Pressable
             style={styles.seekButton}
             onPress={handleSeekForward}
-            activeOpacity={0.7}
+            
           >
             <View style={styles.seekIconContainer}>
               <Ionicons
@@ -615,16 +615,16 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
               />
               <Text style={styles.seekBtnLabelCenter}>10</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Next */}
-          <TouchableOpacity
+          <Pressable
             style={styles.skipButton}
             onPress={handleNext}
-            activeOpacity={0.7}
+            
           >
             <Ionicons name="play-skip-forward" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         {/* Bottom Actions: shuffle, repeat, download, like, queue */}
@@ -632,15 +632,15 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           entering={FadeInUp.duration(400).delay(450)}
           style={styles.bottomActions}
         >
-          <TouchableOpacity style={styles.bottomBtn} onPress={toggleShuffle} activeOpacity={0.7}>
+          <Pressable style={styles.bottomBtn} onPress={toggleShuffle} >
             <Ionicons
               name={shuffle ? 'shuffle' : 'shuffle-outline'}
               size={22}
               color={shuffle ? colors.secondary : colors.textMuted}
             />
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.bottomBtn} onPress={handleRepeatToggle} activeOpacity={0.7}>
+          <Pressable style={styles.bottomBtn} onPress={handleRepeatToggle} >
             <View style={styles.iconWithBadge}>
               <Ionicons
                 name={getRepeatIcon()}
@@ -653,12 +653,12 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
                 </View>
               )}
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Download Button with Progress */}
-          <TouchableOpacity 
+          <Pressable 
             style={styles.bottomBtn} 
-            activeOpacity={0.7}
+            
             onPress={handleDownloadToggle}
           >
             {isDownloading(currentSong.id) ? (
@@ -684,11 +684,11 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
                 color={isDownloaded(currentSong.id) ? colors.secondary : colors.textMuted} 
               />
             )}
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity 
+          <Pressable 
             style={styles.bottomBtn} 
-            activeOpacity={0.7}
+            
             onPress={handleLikeToggle}
           >
             <Ionicons 
@@ -696,15 +696,15 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
               size={22} 
               color={currentSong && isFavorite(currentSong.id) ? colors.primary : colors.textMuted} 
             />
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity 
+          <Pressable 
             style={styles.bottomBtn} 
-            activeOpacity={0.7}
+            
             onPress={() => navigation.navigate('Queue')}
           >
             <Ionicons name="list" size={22} color={colors.textMuted} />
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         {/* Lyrics pull-up */}
@@ -712,14 +712,14 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           entering={FadeInUp.duration(400).delay(500)}
           style={styles.lyricsSection}
         >
-          <TouchableOpacity 
+          <Pressable 
             style={styles.lyricsButton}
             onPress={() => setShowLyrics(true)}
-            activeOpacity={0.7}
+            
           >
             <Ionicons name="chevron-up" size={20} color={colors.textMuted} />
             <Text style={styles.lyricsLabel}>Lyrics</Text>
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
       </View>
 
@@ -744,13 +744,13 @@ export const PlayerScreen: React.FC<Props> = ({ route, navigation }) => {
           
           {/* Lyrics Header */}
           <View style={styles.lyricsHeader}>
-            <TouchableOpacity
+            <Pressable
               style={styles.lyricsCloseButton}
               onPress={() => setShowLyrics(false)}
-              activeOpacity={0.7}
+              
             >
               <Ionicons name="chevron-down" size={28} color={colors.textPrimary} />
-            </TouchableOpacity>
+            </Pressable>
             <Text style={styles.lyricsHeaderTitle}>Lyrics</Text>
             <View style={styles.lyricsHeaderRight} />
           </View>
@@ -1210,3 +1210,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
 });
+

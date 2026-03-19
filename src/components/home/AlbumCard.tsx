@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
+import { Pressable, View, Text, StyleSheet, Image } from 'react-native';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 
 interface AlbumCardProps {
@@ -21,10 +21,13 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
   onPress,
 }) => {
   return (
-    <TouchableOpacity
-      style={styles.container}
+    <Pressable
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.containerPressed,
+      ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      android_ripple={{ color: 'rgba(255, 138, 0, 0.2)', borderless: false }}
     >
       <View style={styles.imageContainer}>
         {imageUri ? (
@@ -45,7 +48,7 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
           {artist}
         </Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -53,6 +56,10 @@ const styles = StyleSheet.create({
   container: {
     width: 140,
     marginRight: spacing.md,
+  },
+  containerPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.96 }],
   },
   imageContainer: {
     width: 140,
@@ -86,3 +93,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 });
+

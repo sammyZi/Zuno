@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayerStore } from '../../store';
 import { usePlayback } from '../../hooks';
@@ -42,17 +42,17 @@ export const MiniPlayerExample: React.FC = () => {
           </Text>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           onPress={togglePlayPause}
           style={styles.playButton}
-          activeOpacity={0.8}
+          
         >
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
             size={20}
             color={colors.backgroundPrimary}
           />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
@@ -100,3 +100,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+

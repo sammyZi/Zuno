@@ -10,7 +10,7 @@ import {
   Text,
   StyleSheet,
   Modal,
-  TouchableOpacity,
+  Pressable,
   TouchableWithoutFeedback,
   FlatList,
   TextInput,
@@ -76,10 +76,10 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
     const songCount = item.songs.length;
 
     return (
-      <TouchableOpacity
+      <Pressable
         style={[styles.playlistItem, isInPlaylist && styles.playlistItemActive]}
         onPress={() => handleTogglePlaylist(item)}
-        activeOpacity={0.6}
+        
       >
         {/* Playlist Thumbnail */}
         <View style={[styles.playlistThumb, isInPlaylist && styles.playlistThumbActive]}>
@@ -123,7 +123,7 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
             color={isInPlaylist ? '#fff' : colors.textMuted}
           />
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -147,13 +147,13 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
               {/* Header */}
               <View style={styles.header}>
                 <Text style={styles.title}>Add to Playlist</Text>
-                <TouchableOpacity
+                <Pressable
                   style={styles.closeButton}
                   onPress={onClose}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Ionicons name="close" size={20} color={colors.textMuted} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
 
               {/* Song Preview Banner */}
@@ -176,10 +176,10 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
 
               {/* Create New Playlist Button */}
               {!showCreateInput && (
-                <TouchableOpacity
+                <Pressable
                   style={styles.createButton}
                   onPress={() => setShowCreateInput(true)}
-                  activeOpacity={0.6}
+                  
                 >
                   <LinearGradient
                     colors={[colors.primary, colors.primaryDark]}
@@ -194,7 +194,7 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
                     <Text style={styles.createButtonSubtext}>Start a new collection</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ opacity: 0.4 }} />
-                </TouchableOpacity>
+                </Pressable>
               )}
 
               {/* Create Playlist Input */}
@@ -213,9 +213,9 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
                       selectionColor={colors.primary}
                     />
                     {newPlaylistName.length > 0 && (
-                      <TouchableOpacity onPress={() => setNewPlaylistName('')}>
+                      <Pressable onPress={() => setNewPlaylistName('')}>
                         <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                      </TouchableOpacity>
+                      </Pressable>
                     )}
                   </View>
                   <View style={styles.inputFooter}>
@@ -223,7 +223,7 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
                       {newPlaylistName.length}/50
                     </Text>
                     <View style={styles.createActions}>
-                      <TouchableOpacity
+                      <Pressable
                         style={styles.createActionCancel}
                         onPress={() => {
                           setShowCreateInput(false);
@@ -231,15 +231,15 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
                         }}
                       >
                         <Text style={styles.createCancelText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </Pressable>
+                      <Pressable
                         style={[
                           styles.createActionPrimary,
                           !newPlaylistName.trim() && styles.createActionDisabled,
                         ]}
                         onPress={handleCreatePlaylist}
                         disabled={!newPlaylistName.trim()}
-                        activeOpacity={0.7}
+                        
                       >
                         <Ionicons
                           name="checkmark"
@@ -255,7 +255,7 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
                         >
                           Create
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </View>
                   </View>
                 </View>
@@ -298,9 +298,9 @@ export const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
 
               {/* Done Button */}
               <View style={styles.doneButtonContainer}>
-                <TouchableOpacity style={styles.doneButton} onPress={onClose} activeOpacity={0.8}>
+                <Pressable style={styles.doneButton} onPress={onClose} >
                   <Text style={styles.doneButtonText}>Done</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -666,3 +666,4 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
+

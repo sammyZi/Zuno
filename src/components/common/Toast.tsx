@@ -9,7 +9,7 @@ import {
   Text,
   StyleSheet,
   Animated,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
@@ -216,13 +216,17 @@ export const Toast: React.FC<ToastProps> = ({
           )}
           
           {onClose && index === 0 && (
-            <TouchableOpacity
-              style={styles.closeButton}
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
               onPress={hideToast}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              android_ripple={{ color: 'rgba(255, 255, 255, 0.2)', borderless: true, radius: 10 }}
             >
               <Ionicons name="close" size={14} color={colors.textMuted} />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       </View>
@@ -303,5 +307,8 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  closeButtonPressed: {
+    opacity: 0.5,
   },
 });

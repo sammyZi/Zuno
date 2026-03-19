@@ -10,7 +10,7 @@
 
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   View,
   Text,
   StyleSheet,
@@ -64,11 +64,15 @@ export const SongItem: React.FC<SongItemProps> = ({
   };
 
   return (
-    <TouchableOpacity
-      style={[styles.container, style]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.pressed,
+        style,
+      ]}
       onPress={onPress}
       onLongPress={onLongPress}
-      activeOpacity={0.6}
+      android_ripple={{ color: 'rgba(255, 255, 255, 0.1)' }}
     >
       {/* Square album art */}
       <AlbumArt uri={albumArtUri} size="medium" />
@@ -99,30 +103,38 @@ export const SongItem: React.FC<SongItemProps> = ({
 
       {/* Orange play button */}
       {showPlayButton && (
-        <TouchableOpacity
+        <Pressable
           onPress={onPress}
-          style={[styles.playButton, isPlaying && styles.playButtonActive]}
-          activeOpacity={0.7}
+          style={({ pressed }) => [
+            styles.playButton,
+            isPlaying && styles.playButtonActive,
+            pressed && styles.playButtonPressed,
+          ]}
+          android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', borderless: true, radius: 14 }}
         >
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
             size={12}
             color={isPlaying ? colors.backgroundPrimary : colors.backgroundPrimary}
           />
-        </TouchableOpacity>
+        </Pressable>
       )}
 
       {/* 3-dot menu */}
       {showMoreButton && onMorePress && song && (
-        <TouchableOpacity
+        <Pressable
           onPress={handleMorePress}
-          style={styles.moreButton}
+          style={({ pressed }) => [
+            styles.moreButton,
+            pressed && styles.moreButtonPressed,
+          ]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          android_ripple={{ color: 'rgba(255, 255, 255, 0.2)', borderless: true, radius: 16 }}
         >
           <Ionicons name="ellipsis-vertical" size={16} color={colors.textMuted} />
-        </TouchableOpacity>
+        </Pressable>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -131,6 +143,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
+  },
+  pressed: {
+    opacity: 0.7,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   info: {
     flex: 1,
@@ -169,11 +185,18 @@ const styles = StyleSheet.create({
   playButtonActive: {
     backgroundColor: colors.primaryDark,
   },
+  playButtonPressed: {
+    transform: [{ scale: 0.9 }],
+    opacity: 0.8,
+  },
   moreButton: {
     padding: spacing.xs,
     minWidth: 32,
     minHeight: 32,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  moreButtonPressed: {
+    opacity: 0.5,
   },
 });
