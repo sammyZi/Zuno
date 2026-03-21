@@ -1,13 +1,14 @@
 /**
  * SearchFilterChips Component
  * Horizontal scrollable filter chips for search categories
+ * Uses TouchableOpacity instead of Pressable+android_ripple to avoid
+ * visual artifacts where the old chip appears stuck as active.
  */
 
 import React from 'react';
 import {
-  View,
   Text,
-  Pressable,
+  TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from 'react-native';
@@ -20,6 +21,35 @@ interface SearchFilterChipsProps {
   activeFilter: SearchFilter;
   onFilterChange: (filter: SearchFilter) => void;
 }
+
+// Individual chip component with its own key for clean re-rendering
+const FilterChip = React.memo(({
+  label,
+  isActive,
+  onPress,
+}: {
+  label: SearchFilter;
+  isActive: boolean;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    activeOpacity={0.7}
+    onPress={onPress}
+    style={[
+      styles.chip,
+      isActive ? styles.chipActive : styles.chipInactive,
+    ]}
+  >
+    <Text
+      style={[
+        styles.chipText,
+        isActive ? styles.chipTextActive : styles.chipTextInactive,
+      ]}
+    >
+      {label}
+    </Text>
+  </TouchableOpacity>
+));
 
 export const SearchFilterChips: React.FC<SearchFilterChipsProps> = ({
   filters,
@@ -34,28 +64,12 @@ export const SearchFilterChips: React.FC<SearchFilterChipsProps> = ({
       style={styles.scrollView}
     >
       {filters.map((filter) => (
-        <Pressable
-          key={filter}
-          style={({ pressed }) => [
-            styles.chip,
-            activeFilter === filter && styles.chipActive,
-            pressed && styles.chipPressed,
-          ]}
+        <FilterChip
+          key={`${filter}-${activeFilter === filter}`}
+          label={filter}
+          isActive={activeFilter === filter}
           onPress={() => onFilterChange(filter)}
-          android_ripple={{
-            color: activeFilter === filter ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 138, 0, 0.3)',
-            borderless: false,
-          }}
-        >
-          <Text
-            style={[
-              styles.chipText,
-              activeFilter === filter && styles.chipTextActive,
-            ]}
-          >
-            {filter}
-          </Text>
-        </Pressable>
+        />
       ))}
     </ScrollView>
   );
@@ -77,28 +91,29 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: borderRadius.round,
     borderWidth: 1.5,
-    borderColor: colors.primary,
-    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
   },
   chipActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  chipPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.96 }],
+  chipInactive: {
+    backgroundColor: 'transparent',
+    borderColor: colors.primary,
   },
   chipText: {
     fontSize: 13,
     fontFamily: 'Poppins_500Medium',
-    color: colors.primary,
     textAlign: 'center',
     textAlignVertical: 'center',
     includeFontPadding: false,
   },
   chipTextActive: {
     color: colors.backgroundPrimary,
+  },
+  chipTextInactive: {
+    color: colors.primary,
   },
 });

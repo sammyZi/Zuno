@@ -10,6 +10,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { usePlayerStore } from './src/store/playerStore';
 import { useDownloadStore } from './src/store/downloadStore';
+import { useQueueStore } from './src/store/queueStore';
 import { AppNavigator } from './src/navigation';
 
 // Suppress known warnings from react-native-reanimated worklets
@@ -31,6 +32,9 @@ export default function App() {
   // Initialize audio service and downloads on app start
   useEffect(() => {
     const initializeApp = async () => {
+      // Clear any stale queue from a previous session
+      useQueueStore.getState().clearQueue();
+
       // Longer delay to ensure activity is fully ready
       await new Promise(resolve => setTimeout(resolve, 1000));
 

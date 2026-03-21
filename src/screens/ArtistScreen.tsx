@@ -40,7 +40,7 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
   const [artistImage, setArtistImage] = useState<string | undefined>();
 
   const { currentSong, play } = usePlayerStore();
-  const { playAndBuildQueue } = useQueueStore();
+  const { playAndBuildQueue, setQueue, toggleShuffle } = useQueueStore();
 
   useEffect(() => {
     loadArtistData();
@@ -103,11 +103,14 @@ export const ArtistScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleShufflePlay = () => {
     if (songs.length > 0) {
-      // Shuffle the songs array
-      const shuffledSongs = [...songs].sort(() => Math.random() - 0.5);
-      playAndBuildQueue(shuffledSongs[0], shuffledSongs);
-      play(shuffledSongs[0]);
-      navigation.navigate('Player', { song: shuffledSongs[0] });
+      // Set queue with all songs, then toggle shuffle in the store
+      setQueue(songs, 0);
+      toggleShuffle();
+      // Play the song now at index 0 (shuffled)
+      const state = useQueueStore.getState();
+      const songToPlay = state.queue[state.currentIndex] || songs[0];
+      play(songToPlay);
+      navigation.navigate('Player', { song: songToPlay });
     }
   };
 

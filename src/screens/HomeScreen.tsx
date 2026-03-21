@@ -291,7 +291,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       toggleSongSelection(song.id);
       return;
     }
-    playAndBuildQueue(song, contextList);
+    playAndBuildQueue(song);
     play(song);
     navigation.navigate('Player', { song });
   };

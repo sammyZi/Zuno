@@ -245,16 +245,20 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
               [shuffledQueue[i], shuffledQueue[j]] = [shuffledQueue[j], shuffledQueue[i]];
             }
 
-            // Find new index of current song
-            const newIndex = currentSong
-              ? shuffledQueue.findIndex((s) => s.id === currentSong.id)
-              : 0;
+            // Move current song to the top of the shuffled queue
+            if (currentSong) {
+              const currentIdx = shuffledQueue.findIndex((s) => s.id === currentSong.id);
+              if (currentIdx > 0) {
+                shuffledQueue.splice(currentIdx, 1);
+                shuffledQueue.unshift(currentSong);
+              }
+            }
 
             return {
               shuffle: true,
               queue: shuffledQueue,
               originalQueue,
-              currentIndex: newIndex >= 0 ? newIndex : 0,
+              currentIndex: 0,
             };
           } else {
             // Disable shuffle - restore original queue
@@ -320,20 +324,36 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
       },
 
       /**
-       * Play a song without auto-populating the queue.
-       * Only adds the single song being played to the queue.
-       * User must manually add additional songs to build the queue.
+       * Play a song and build queue from context.
+       * When contextSongs are provided (e.g. from an album or artist),
+       * all context songs are added to the queue, starting from the selected song.
+       * When no context is provided, only the single song is queued.
        */
       playAndBuildQueue: (song, contextSongs) => {
-        // Always set just the single song, ignore contextSongs
-        // User must manually add songs to queue if they want more
-        console.log('[QueueStore] Playing single song without auto-populating queue:', song.name);
-        set({
-          queue: [song],
-          currentIndex: 0,
-          originalQueue: [song],
-          shuffle: false,
-          manuallyAddedIndices: [],
-        });
+        if (contextSongs && contextSongs.length > 1) {
+          const startIndex = contextSongs.findIndex(s => s.id === song.id);
+          const validIndex = startIndex >= 0 ? startIndex : 0;
+          
+          console.log('[QueueStore] Playing song from context:', song.name, 
+            '| Queue size:', contextSongs.length, 
+            '| Start index:', validIndex);
+          
+          set({
+            queue: [...contextSongs],
+            currentIndex: validIndex,
+            originalQueue: [...contextSongs],
+            shuffle: false,
+            manuallyAddedIndices: [],
+          });
+        } else {
+          console.log('[QueueStore] Playing single song:', song.name);
+          set({
+            queue: [song],
+            currentIndex: 0,
+            originalQueue: [song],
+            shuffle: false,
+            manuallyAddedIndices: [],
+          });
+        }
       },
     }));

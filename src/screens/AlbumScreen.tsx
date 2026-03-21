@@ -41,7 +41,7 @@ export const AlbumScreen: React.FC<Props> = ({ route, navigation }) => {
   const [albumArtist, setAlbumArtist] = useState('Unknown Artist');
 
   const { currentSong, play } = usePlayerStore();
-  const { playAndBuildQueue } = useQueueStore();
+  const { playAndBuildQueue, setQueue, toggleShuffle } = useQueueStore();
 
   useEffect(() => {
     loadAlbumData();
@@ -83,6 +83,32 @@ export const AlbumScreen: React.FC<Props> = ({ route, navigation }) => {
     play(song);
     navigation.navigate('Player', { song });
   };
+
+  const handlePlayAll = () => {
+    if (songs.length === 0) return;
+    setQueue(songs, 0);
+    play(songs[0]);
+    navigation.navigate('Player', { song: songs[0] });
+  };
+
+  const handleShuffleAll = () => {
+    if (songs.length === 0) return;
+    setQueue(songs, 0);
+    toggleShuffle();
+    const state = useQueueStore.getState();
+    const songToPlay = state.queue[state.currentIndex] || songs[0];
+    play(songToPlay);
+    navigation.navigate('Player', { song: songToPlay });
+  };
+
+  // Calculate total album duration
+  const totalDurationSeconds = songs.reduce((acc, song) => acc + (song.duration || 0), 0);
+  const totalHours = Math.floor(totalDurationSeconds / 3600);
+  const totalMinutes = Math.floor((totalDurationSeconds % 3600) / 60);
+  const totalSecs = Math.floor(totalDurationSeconds % 60);
+  const totalDurationStr = totalHours > 0
+    ? `${String(totalHours).padStart(2, '0')}:${String(totalMinutes).padStart(2, '0')}:${String(totalSecs).padStart(2, '0')}`
+    : `${String(totalMinutes).padStart(2, '0')}:${String(totalSecs).padStart(2, '0')}`;
 
   if (loading) {
     return (
@@ -134,17 +160,17 @@ export const AlbumScreen: React.FC<Props> = ({ route, navigation }) => {
 
         {/* Stats */}
         <Text style={styles.albumStats}>
-          1 Album  |  {songs.length} Songs  |  01:20:38 mins
+          1 Album  |  {songs.length} Songs  |  {totalDurationStr} mins
         </Text>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <Pressable style={styles.shuffleButton} >
+          <Pressable style={styles.shuffleButton} onPress={handleShuffleAll}>
             <Ionicons name="shuffle" size={20} color={colors.backgroundPrimary} />
             <Text style={styles.shuffleButtonText}>Shuffle</Text>
           </Pressable>
 
-          <Pressable style={styles.playActionButton} >
+          <Pressable style={styles.playActionButton} onPress={handlePlayAll}>
             <Ionicons name="play" size={18} color={colors.backgroundPrimary} />
             <Text style={styles.playActionButtonText}>Play</Text>
           </Pressable>
