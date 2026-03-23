@@ -13,20 +13,15 @@ import {
   Platform,
   Pressable,
 } from 'react-native';
-import type { CompositeScreenProps } from '@react-navigation/native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { StackScreenProps } from '@react-navigation/stack';
-import type { RootStackParamList, TabParamList } from '../navigation/types';
+import type { RootStackParamList } from '../navigation/types';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { SongItem } from '../components/song';
 import { usePlayerStore, useQueueStore, useHistoryStore } from '../store';
 import { getImageUrl, formatDuration, getArtistNames } from '../utils/audio';
 import { Ionicons } from '@expo/vector-icons';
 
-type Props = CompositeScreenProps<
-  BottomTabScreenProps<TabParamList, 'Home'>,
-  StackScreenProps<RootStackParamList>
->;
+type Props = StackScreenProps<RootStackParamList, 'RecentlyPlayed'>;
 
 export const RecentlyPlayedScreen: React.FC<Props> = ({ navigation }) => {
   const { currentSong, play } = usePlayerStore();

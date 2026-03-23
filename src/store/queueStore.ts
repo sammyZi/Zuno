@@ -59,6 +59,19 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
             console.warn('[QueueStore] Filtered out', songs.length - validSongs.length, 'invalid songs');
           }
           
+          // Filter out songs that are already in the queue
+          const existingIds = new Set(state.queue.map(s => s.id));
+          const newSongs = validSongs.filter(s => !existingIds.has(s.id));
+          
+          if (newSongs.length === 0) {
+            console.warn('[QueueStore] All songs already in queue, skipping');
+            return state; // Return unchanged state
+          }
+          
+          if (newSongs.length < validSongs.length) {
+            console.log('[QueueStore] Filtered out', validSongs.length - newSongs.length, 'duplicate songs');
+          }
+          
           let newQueue = [...state.queue];
           let insertIndex: number;
           let newManualIndices = [...state.manuallyAddedIndices];
@@ -75,26 +88,26 @@ export const useQueueStore = create<QueueState>()((set, get) => ({
             }
 
             // Insert songs at the calculated position
-            newQueue.splice(insertIndex, 0, ...validSongs);
+            newQueue.splice(insertIndex, 0, ...newSongs);
 
             // Update manual indices (shift existing indices if needed)
             newManualIndices = newManualIndices.map(idx => 
-              idx >= insertIndex ? idx + validSongs.length : idx
+              idx >= insertIndex ? idx + newSongs.length : idx
             );
             
             // Add new manual indices
-            for (let i = 0; i < validSongs.length; i++) {
+            for (let i = 0; i < newSongs.length; i++) {
               newManualIndices.push(insertIndex + i);
             }
           } else {
             // Auto-added songs (from context/albums): append to end
-            newQueue = [...state.queue, ...validSongs];
+            newQueue = [...state.queue, ...newSongs];
           }
 
           return {
             queue: newQueue,
             manuallyAddedIndices: newManualIndices,
-            originalQueue: state.shuffle ? [...state.originalQueue, ...validSongs] : newQueue,
+            originalQueue: state.shuffle ? [...state.originalQueue, ...newSongs] : newQueue,
           };
         }),
 
