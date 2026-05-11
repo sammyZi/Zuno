@@ -271,42 +271,31 @@ function SearchScreen() {
 ## Integration with Audio Service
 
 ```typescript
-import { Audio } from 'expo-av';
+import { createAudioPlayer, AudioPlayer } from 'expo-audio';
 import { usePlayerStore } from './store';
 
 class AudioService {
-  private sound: Audio.Sound | null = null;
+  private player: AudioPlayer | null = null;
   
   async loadAndPlay(song: Song) {
     // Load audio
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: getAudioUrl(song) },
-      { shouldPlay: true }
-    );
+    this.player = createAudioPlayer({ uri: getAudioUrl(song) }, { updateInterval: 500 });
+    this.player.play();
     
-    this.sound = sound;
-    
-    // Update duration
-    const status = await sound.getStatusAsync();
-    if (status.isLoaded) {
-      usePlayerStore.getState().setDuration(status.durationMillis / 1000);
-    }
-    
-    // Listen to position updates
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded) {
-        usePlayerStore.getState().setPosition(status.positionMillis / 1000);
-      }
+    // Listen to status updates
+    this.player.addListener('playbackStatusUpdate', (status) => {
+      usePlayerStore.getState().setDuration(status.duration || 0);
+      usePlayerStore.getState().setPosition(status.currentTime || 0);
     });
   }
   
   async play() {
-    await this.sound?.playAsync();
+    this.player?.play();
     usePlayerStore.getState().play();
   }
   
   async pause() {
-    await this.sound?.pauseAsync();
+    this.player?.pause();
     usePlayerStore.getState().pause();
   }
 }

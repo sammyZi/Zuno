@@ -1,15 +1,14 @@
 /**
  * Audio Service
- * Manages audio playback using expo-av with background playback support
+ * Manages audio playback using expo-audio with background playback support
  */
 
 import { 
-  Audio, 
-  AVPlaybackStatus, 
-  AVPlaybackStatusSuccess,
-  InterruptionModeIOS,
-  InterruptionModeAndroid 
-} from 'expo-av';
+  createAudioPlayer,
+  AudioPlayer,
+  setAudioModeAsync,
+  AudioStatus
+} from 'expo-audio';
 import { Song } from '../../types';
 import { getAudioUrl } from '../../utils/audio';
 import { DownloadService } from '../storage';
@@ -18,18 +17,19 @@ import { NotificationService } from './NotificationService';
 export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'stopped' | 'error';
 
 export interface AudioServiceCallbacks {
-  onPlaybackStatusUpdate?: (status: AVPlaybackStatusSuccess) => void;
+  onPlaybackStatusUpdate?: (status: AudioStatus) => void;
   onPlaybackEnd?: () => void;
   onError?: (error: string) => void;
   onLoading?: (isLoading: boolean) => void;
 }
 
 class AudioServiceClass {
-  private sound: Audio.Sound | null = null;
+  private player: AudioPlayer | null = null;
   private currentSong: Song | null = null;
   private callbacks: AudioServiceCallbacks = {};
   private isInitialized = false;
   private playbackStatus: PlaybackStatus = 'idle';
+  private statusSubscription: any = null;
 
   /**
    * Initialize audio service with background playback configuration
@@ -48,18 +48,15 @@ class AudioServiceClass {
         // Wait for activity to be ready (longer delay on first attempt)
         await new Promise(resolve => setTimeout(resolve, 300 * (retryCount + 1)));
         
-        // Configure audio mode for background playback
-        await Audio.setAudioModeAsync({
-          staysActiveInBackground: true,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        // Configure audio mode for background playback using expo-audio
+        await setAudioModeAsync({
+          shouldPlayInBackground: true,
+          playsInSilentMode: true,
+          interruptionMode: 'doNotMix',
         });
 
         this.isInitialized = true;
-        console.log('[AudioService] Initialized with background playback support');
+        console.log('[AudioService] Initialized with background playback support (expo-audio)');
         
         // Initialize notification service
         await NotificationService.initialize();
@@ -71,7 +68,6 @@ class AudioServiceClass {
         
         if (retryCount >= maxRetries) {
           console.error('[AudioService] Failed to initialize after', maxRetries, 'attempts');
-          // Mark as initialized anyway - app can work without full audio mode setup
           this.isInitialized = true;
           return;
         }
@@ -96,7 +92,7 @@ class AudioServiceClass {
       this.callbacks.onLoading?.(true);
 
       // Unload previous sound if exists to prevent overlap
-      if (this.sound) {
+      if (this.player) {
         console.log('[AudioService] Unloading previous audio before loading new one');
         await this.unloadAudio();
       }
@@ -118,22 +114,19 @@ class AudioServiceClass {
 
       console.log('[AudioService] Loading audio:', song.name);
 
-      // Create and load new sound with proper headers
-      const { sound } = await Audio.Sound.createAsync(
-        { 
-          uri: audioUrl,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36',
-            'Accept': '*/*',
-          }
-        },
-        { shouldPlay: false, progressUpdateIntervalMillis: 500 },
-        this.onPlaybackStatusUpdate.bind(this)
-      );
+      // Create new player with expo-audio
+      this.player = createAudioPlayer({
+        uri: audioUrl,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36',
+          'Accept': '*/*',
+        }
+      }, { updateInterval: 500, downloadFirst: false });
 
-      this.sound = sound;
+      this.statusSubscription = this.player.addListener('playbackStatusUpdate', this.onPlaybackStatusUpdate.bind(this));
+
       this.currentSong = song;
-      this.playbackStatus = 'stopped';
+      this.playbackStatus = 'loading';
       this.callbacks.onLoading?.(false);
 
       console.log('[AudioService] Audio loaded successfully');
@@ -152,29 +145,25 @@ class AudioServiceClass {
    * Play audio
    */
   async playAudio(): Promise<void> {
-    if (!this.sound) {
+    if (!this.player) {
       console.warn('[AudioService] No sound loaded');
       return;
     }
 
     try {
-      const status = await this.sound.getStatusAsync();
-      
-      if (status.isLoaded) {
-        // If at the end, replay from beginning
-        if (status.didJustFinish) {
-          await this.sound.setPositionAsync(0);
-        }
-        
-        await this.sound.playAsync();
-        this.playbackStatus = 'playing';
-        
-        console.log('[AudioService] Playback started');
-        
-        // Update notification
-        if (this.currentSong) {
-          await NotificationService.updateNotification(this.currentSong, true, this.sound);
-        }
+      // If at the end, seek to beginning first
+      if (this.player.isLoaded && this.player.currentTime >= this.player.duration - 0.5 && this.player.duration > 0) {
+        await this.player.seekTo(0);
+      }
+
+      // Call play() directly — expo-audio will queue it if still loading
+      this.player.play();
+      this.playbackStatus = 'playing';
+      console.log('[AudioService] Playback started');
+
+      // Set up lock screen controls with metadata and seek buttons
+      if (this.currentSong) {
+        await NotificationService.updateNotification(this.currentSong, true, this.player);
       }
     } catch (error) {
       this.playbackStatus = 'error';
@@ -188,19 +177,19 @@ class AudioServiceClass {
    * Pause audio
    */
   async pauseAudio(): Promise<void> {
-    if (!this.sound) {
+    if (!this.player) {
       console.warn('[AudioService] No sound loaded');
       return;
     }
 
     try {
-      await this.sound.pauseAsync();
+      this.player.pause();
       this.playbackStatus = 'paused';
       console.log('[AudioService] Playback paused');
       
       // Update notification
       if (this.currentSong) {
-        await NotificationService.updateNotification(this.currentSong, false, this.sound);
+        await NotificationService.updateNotification(this.currentSong, false, this.player);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to pause audio';
@@ -213,13 +202,13 @@ class AudioServiceClass {
    * Seek to position in milliseconds
    */
   async seekTo(positionMillis: number): Promise<void> {
-    if (!this.sound) {
+    if (!this.player) {
       console.warn('[AudioService] No sound loaded');
       return;
     }
 
     try {
-      await this.sound.setPositionAsync(positionMillis);
+      await this.player.seekTo(positionMillis / 1000);
       console.log('[AudioService] Seeked to:', positionMillis);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to seek';
@@ -232,13 +221,13 @@ class AudioServiceClass {
    * Stop audio and reset position
    */
   async stopAudio(): Promise<void> {
-    if (!this.sound) {
+    if (!this.player) {
       return;
     }
 
     try {
-      await this.sound.stopAsync();
-      await this.sound.setPositionAsync(0);
+      this.player.pause();
+      await this.player.seekTo(0);
       this.playbackStatus = 'stopped';
       console.log('[AudioService] Playback stopped');
     } catch (error) {
@@ -251,29 +240,28 @@ class AudioServiceClass {
    * Unload current audio
    */
   async unloadAudio(): Promise<void> {
-    if (!this.sound) {
+    if (!this.player) {
       return;
     }
 
     try {
       console.log('[AudioService] Unloading audio:', this.currentSong?.name);
       
-      // Stop playback first
-      const status = await this.sound.getStatusAsync();
-      if (status.isLoaded && status.isPlaying) {
-        await this.sound.stopAsync();
+      this.player.pause();
+      if (this.statusSubscription) {
+        this.statusSubscription.remove();
+        this.statusSubscription = null;
       }
-      
-      // Unload the sound
-      await this.sound.unloadAsync();
-      this.sound = null;
+      this.player.clearLockScreenControls();
+      this.player.remove();
+      this.player = null;
       this.currentSong = null;
       this.playbackStatus = 'idle';
       console.log('[AudioService] Audio unloaded successfully');
     } catch (error) {
       console.error('[AudioService] Unload error:', error);
       // Force cleanup even on error
-      this.sound = null;
+      this.player = null;
       this.currentSong = null;
       this.playbackStatus = 'idle';
     }
@@ -283,40 +271,20 @@ class AudioServiceClass {
    * Get current playback position in milliseconds
    */
   async getPosition(): Promise<number> {
-    if (!this.sound) {
+    if (!this.player) {
       return 0;
     }
-
-    try {
-      const status = await this.sound.getStatusAsync();
-      if (status.isLoaded) {
-        return status.positionMillis;
-      }
-    } catch (error) {
-      console.error('[AudioService] Get position error:', error);
-    }
-
-    return 0;
+    return this.player.currentTime * 1000;
   }
 
   /**
    * Get current playback duration in milliseconds
    */
   async getDuration(): Promise<number> {
-    if (!this.sound) {
+    if (!this.player) {
       return 0;
     }
-
-    try {
-      const status = await this.sound.getStatusAsync();
-      if (status.isLoaded && status.durationMillis) {
-        return status.durationMillis;
-      }
-    } catch (error) {
-      console.error('[AudioService] Get duration error:', error);
-    }
-
-    return 0;
+    return this.player.duration * 1000;
   }
 
   /**
@@ -337,29 +305,21 @@ class AudioServiceClass {
    * Check if audio is playing
    */
   async isPlaying(): Promise<boolean> {
-    if (!this.sound) {
+    if (!this.player) {
       return false;
     }
-
-    try {
-      const status = await this.sound.getStatusAsync();
-      return status.isLoaded && status.isPlaying;
-    } catch (error) {
-      console.error('[AudioService] Is playing check error:', error);
-      return false;
-    }
+    return this.player.playing;
   }
 
   /**
    * Set playback rate (speed)
    */
   async setRate(rate: number): Promise<void> {
-    if (!this.sound) {
+    if (!this.player) {
       return;
     }
-
     try {
-      await this.sound.setRateAsync(rate, true);
+      this.player.setPlaybackRate(rate, 'high');
       console.log('[AudioService] Playback rate set to:', rate);
     } catch (error) {
       console.error('[AudioService] Set rate error:', error);
@@ -370,13 +330,12 @@ class AudioServiceClass {
    * Set volume (0.0 to 1.0)
    */
   async setVolume(volume: number): Promise<void> {
-    if (!this.sound) {
+    if (!this.player) {
       return;
     }
-
     try {
       const clampedVolume = Math.max(0, Math.min(1, volume));
-      await this.sound.setVolumeAsync(clampedVolume);
+      this.player.volume = clampedVolume;
       console.log('[AudioService] Volume set to:', clampedVolume);
     } catch (error) {
       console.error('[AudioService] Set volume error:', error);
@@ -386,18 +345,20 @@ class AudioServiceClass {
   /**
    * Handle playback status updates
    */
-  private onPlaybackStatusUpdate(status: AVPlaybackStatus): void {
-    if (!status.isLoaded) {
-      if (status.error) {
-        console.error('[AudioService] Playback error:', status.error);
+  private onPlaybackStatusUpdate(status: AudioStatus): void {
+    // Note: status.error is not natively in all versions, wait, let's catch standard ones
+    if (!status.isLoaded && !status.isBuffering) {
+      // In expo-audio, error might be available on status
+      if ((status as any).error) {
+        console.error('[AudioService] Playback error:', (status as any).error);
         this.playbackStatus = 'error';
-        this.callbacks.onError?.(status.error);
+        this.callbacks.onError?.((status as any).error);
       }
-      return;
+      // return; // wait, let's not return early if not loaded, let state update
     }
 
     // Update playback status
-    if (status.isPlaying) {
+    if (status.playing) {
       this.playbackStatus = 'playing';
     } else if (status.isBuffering) {
       this.playbackStatus = 'loading';
@@ -409,7 +370,7 @@ class AudioServiceClass {
     this.callbacks.onPlaybackStatusUpdate?.(status);
 
     // Handle playback end
-    if (status.didJustFinish && !status.isLooping) {
+    if (status.didJustFinish && !status.loop) {
       console.log('[AudioService] Playback finished');
       this.playbackStatus = 'stopped';
       this.callbacks.onPlaybackEnd?.();

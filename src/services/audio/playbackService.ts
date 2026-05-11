@@ -1,11 +1,9 @@
 /**
  * Playback Service
- * Handles audio session configuration for expo-av.
- * Note: expo-av doesn't have built-in remote control events like react-native-track-player.
- * Remote controls are handled through the audio session configuration in AudioService.
+ * Handles audio session configuration for expo-audio.
  */
 
-import { Audio } from 'expo-av';
+import { setAudioModeAsync } from 'expo-audio';
 
 /**
  * Initialize audio session for playback.
@@ -13,10 +11,10 @@ import { Audio } from 'expo-av';
  */
 export async function initializePlaybackService() {
   try {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-      shouldDuckAndroid: true,
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'doNotMix',
     });
     console.log('[PlaybackService] Audio session initialized');
   } catch (error) {

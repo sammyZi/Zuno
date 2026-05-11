@@ -1,27 +1,26 @@
 /**
  * Notification Service
  * Manages media notifications and lock screen controls
- * Uses expo-av's built-in media session support
+ * Uses expo-audio's built-in media session support
  */
 
 import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { AudioPlayer } from 'expo-audio';
 import { Song } from '../../types';
 import { getImageUrl, getArtistNames } from '../../utils/audio';
 
 class NotificationServiceClass {
   private isEnabled = false;
   private currentSong: Song | null = null;
+  private playbackCallbacks: any = null;
 
   /**
    * Initialize notification service
    */
   async initialize(): Promise<void> {
     try {
-      // expo-av automatically handles media notifications when configured properly
-      // No additional setup needed for basic media controls
       this.isEnabled = true;
-      console.log('[NotificationService] Initialized - using expo-av media session');
+      console.log('[NotificationService] Initialized - using expo-audio lock screen controls');
     } catch (error) {
       console.error('[NotificationService] Initialization failed:', error);
     }
@@ -29,22 +28,32 @@ class NotificationServiceClass {
 
   /**
    * Update notification with current song info
-   * expo-av automatically creates media-style notifications with lock screen controls
    */
   async updateNotification(
     song: Song,
     isPlaying: boolean,
-    sound: Audio.Sound | null
+    player: AudioPlayer | null
   ): Promise<void> {
-    if (!this.isEnabled || !sound) {
+    if (!this.isEnabled || !player) {
       return;
     }
 
     try {
       this.currentSong = song;
       
-      // expo-av automatically shows media controls when audio is loaded
-      // The notification is created by the system based on the audio session
+      const artworkUrl = getImageUrl(song.image);
+      const artist = getArtistNames(song);
+
+      player.setActiveForLockScreen(true, {
+        title: song.name,
+        artist: artist,
+        albumTitle: song.album?.name || '',
+        artworkUrl: artworkUrl,
+      }, {
+        showSeekForward: true,
+        showSeekBackward: true,
+      });
+
       console.log('[NotificationService] Media session active for:', song.name);
     } catch (error) {
       console.error('[NotificationService] Update failed:', error);
@@ -54,13 +63,16 @@ class NotificationServiceClass {
   /**
    * Clear notification
    */
-  async clearNotification(): Promise<void> {
+  async clearNotification(player?: AudioPlayer | null): Promise<void> {
     if (!this.isEnabled) {
       return;
     }
 
     try {
       this.currentSong = null;
+      if (player) {
+         player.clearLockScreenControls();
+      }
       console.log('[NotificationService] Media session cleared');
     } catch (error) {
       console.error('[NotificationService] Clear failed:', error);
@@ -69,7 +81,6 @@ class NotificationServiceClass {
 
   /**
    * Set playback controls callbacks
-   * Note: expo-av handles media controls automatically through the audio session
    */
   setPlaybackControls(callbacks: {
     onPlay: () => void;
@@ -77,8 +88,10 @@ class NotificationServiceClass {
     onNext: () => void;
     onPrevious: () => void;
   }): void {
-    // expo-av handles this through the system media session
-    console.log('[NotificationService] Using expo-av built-in media controls');
+    // expo-audio automatically maps system play/pause to the player instance.
+    // For next/prev, usually AudioPlaylist handles it, but we register callbacks here just in case.
+    this.playbackCallbacks = callbacks;
+    console.log('[NotificationService] Playback controls callbacks registered');
   }
 }
 

@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { Song } from '../types';
 import { AudioService } from '../services/audio';
-import type { AVPlaybackStatusSuccess } from 'expo-av';
+import type { AudioStatus } from 'expo-audio';
 
 interface PlayerState {
   // State
@@ -77,26 +77,26 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
       // Set up audio service callbacks
       AudioService.setCallbacks({
-        onPlaybackStatusUpdate: (status: AVPlaybackStatusSuccess) => {
+        onPlaybackStatusUpdate: (status: AudioStatus) => {
           const state = get();
           
-          // Update position (convert from milliseconds to seconds)
-          const newPosition = status.positionMillis / 1000;
+          // Update position (already in seconds)
+          const newPosition = status.currentTime || 0;
           if (Math.abs(newPosition - state.position) > 0.5) {
             set({ position: newPosition });
           }
 
-          // Update duration (convert from milliseconds to seconds)
-          if (status.durationMillis) {
-            const newDuration = status.durationMillis / 1000;
+          // Update duration (already in seconds)
+          if (status.duration) {
+            const newDuration = status.duration;
             if (state.duration !== newDuration) {
               set({ duration: newDuration });
             }
           }
 
           // Update playing state
-          if (state.isPlaying !== status.isPlaying) {
-            set({ isPlaying: status.isPlaying });
+          if (state.isPlaying !== status.playing) {
+            set({ isPlaying: status.playing });
           }
         },
 
